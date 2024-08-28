@@ -9,10 +9,9 @@
 	],
 	"contact": {
 		"homepage": "https://fabricmc.net/",
-		"sources": "https://github.com/FabricMC/fabric-example-mod"
+		"sources": "https://github.com/Holm99/iblocky-boosternotification-1.20.6"
 	},
 	"license": "CC0-1.0",
-	"icon": "assets/iblocky-boosternotification/icon.png",
 	"environment": "*",
 	"entrypoints": {
 		"main": [
@@ -20,9 +19,6 @@
 		],
 		"client": [
 			"net.holm.boosternoti.iBlockyBoosterNotificationClient"
-		],
-		"fabric-datagen": [
-			"net.holm.boosternoti.iBlockyBoosterNotificationDataGenerator"
 		]
 	},
 	"mixins": [

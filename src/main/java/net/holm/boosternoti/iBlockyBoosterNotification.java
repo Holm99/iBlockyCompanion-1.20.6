@@ -11,7 +11,8 @@ public class iBlockyBoosterNotification implements ModInitializer {
 
 	@Override
 	public void onInitialize() {
-
-		LOGGER.info("Hello Fabric world!");
+		LOGGER.info("Booster Display Mod has been initialized!");
+		BoosterDisplayManager.initialize(); // Ensure this class exists and is implemented properly
 	}
 }
+
