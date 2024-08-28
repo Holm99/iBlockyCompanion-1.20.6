@@ -5,28 +5,28 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.text.Text;
 
 public class BoosterGUI {
-    private static String boosterInfo = "";  // This will hold the booster information to display
 
-    // Method to update the booster information to be displayed
-    public static void updateBoosterInfo(String multiplier, String remainingTime) {
-        boosterInfo = "Tokens: " + multiplier + " (" + remainingTime + " remaining)";
-    }
+    private static String boosterInfo = ""; // Booster information to display
 
-    // Method to clear booster information when no boosters are active
-    public static void clearBoosterInfo() {
-        boosterInfo = "";
-    }
+    // Render method using DrawContext
+    public static void render(DrawContext drawContext) {
+        if (!boosterInfo.isEmpty()) {
+            MinecraftClient client = MinecraftClient.getInstance();
+            int width = client.getWindow().getScaledWidth();
 
-    // Method to render the booster information on the screen using DrawContext
-    public static void render(DrawContext context, float tickDelta) {
-        MinecraftClient client = MinecraftClient.getInstance();
-
-        if (client.player != null && !boosterInfo.isEmpty()) {
-            int x = 10;
-            int y = 10;
-
-            // Draw the booster information at the top left corner of the screen using DrawContext
-            context.drawText(client.textRenderer, Text.of(boosterInfo), x, y, 0xFFFFFF, false); // Use DrawContext to draw text
+            // Position the text at the top center of the screen
+            drawContext.drawTextWithShadow(client.textRenderer, Text.of(boosterInfo), width / 2 - client.textRenderer.getWidth(boosterInfo) / 2, 10, 0xFFFFFF);
         }
+    }
+
+    public static void updateBoosterInfo(String multiplier, String remaining) {
+        boosterInfo = "Booster: " + multiplier + ", Time Left: " + remaining;
+    }
+
+    public static void clearBoosterInfo() {
+        boosterInfo = ""; // Clear the booster information
+    }
+
+    public static void render(DrawContext drawContext, float v) {
     }
 }
