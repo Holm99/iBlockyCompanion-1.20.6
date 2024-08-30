@@ -2,7 +2,16 @@
 
 Welcome to the **iBlocky Booster Notification Mod** repository! 🎉
 
-This mod is designed for the iBlocky Minecraft server to enhance the player's experience by displaying active boosters and their remaining time directly on the in-game HUD.
+This mod is designed specifically for the **iBlocky Minecraft server** to enhance the player's experience by displaying active boosters and their remaining time directly on the in-game HUD.
+
+## Compatibility
+
+- **Minecraft Version**: **1.20.6**
+- **Fabric Loader Version**: **0.16.3**
+- **Fabric API Version**: **0.100.8+1.20.6**
+- **Java Version**: **21**
+
+**Note**: This mod is only compatible with the specified versions of Minecraft, Fabric Loader, Fabric API, and Java. Please ensure your environment matches these versions for optimal performance.
 
 ## Features
 
@@ -15,10 +24,11 @@ This mod is designed for the iBlocky Minecraft server to enhance the player's ex
 ## Installation
 
 1. **Download the Mod**: Grab the latest release from the [Releases](https://github.com/Holm99/iblocky-boosternotification-1.20.6/releases) page.
-2. **Install Fabric Loader**: Make sure you have Fabric Loader installed for Minecraft 1.20.6. You can download it from [Fabric's official website](https://fabricmc.net/use/).
-3. **Install Fabric API**: This mod requires Fabric API. Download version `0.100.8+1.20.6` from [CurseForge](https://www.curseforge.com/minecraft/mc-mods/fabric-api/files/all?page=1&pageSize=20&version=1.20.6&gameVersionTypeId=4).
-4. **Add the Mod to Your Mods Folder**: Place the downloaded mod `.jar` file into your `.minecraft/mods` folder.
-5. **Launch Minecraft**: Start the game using the Fabric profile.
+2. **Install Fabric Loader**: Make sure you have **Fabric Loader 0.16.3** installed for Minecraft **1.20.6**. You can download it from [Fabric's official website](https://fabricmc.net/use/).
+3. **Install Fabric API**: This mod requires **Fabric API version 0.100.8+1.20.6**. Download it from [CurseForge](https://www.curseforge.com/minecraft/mc-mods/fabric-api/files/all?page=1&pageSize=20&version=1.20.6&gameVersionTypeId=4).
+4. **Install Java 21**: Ensure that you have Java 21 installed. You can download it from [Oracle's official website](https://www.oracle.com/java/technologies/javase/jdk21-archive-downloads.html).
+5. **Add the Mod to Your Mods Folder**: Place the downloaded mod `.jar` file into your `.minecraft/mods` folder.
+6. **Launch Minecraft**: Start the game using the Fabric profile.
 
 ## Usage
 
@@ -44,3 +54,59 @@ The configuration file allows you to set various options:
     "loggingLevel": "INFO"
 }
 ```
+
+## Development
+
+If you're interested in contributing or learning how the mod works:
+
+### Prerequisites
+
+- **Java 21**: Ensure you have JDK 21 installed.
+- **Fabric Mod Development Kit (MDK)**: Download from the Fabric website.
+- **IDE**: An IDE like IntelliJ IDEA or Eclipse.
+
+### Building from Source
+
+1. **Clone the Repository**:
+   ```bash
+   git clone https://github.com/Holm99/iblocky-boosternotification-1.20.6.git
+   cd iblocky-boosternotification-1.20.6
+     ```
+
+2. **Set Up Your IDE**:
+   - Import the project as a Gradle project.
+   - Allow Gradle to download dependencies and set up your environment.
+
+3. **Build the Mod**:
+   ```bash
+   ./gradlew build
+     ```
+   
+4. **Find Your Build**: The mod `.jar` file will be in the `build/libs` directory.
+
+## Contributing
+
+Contributions are welcome! If you have suggestions or improvements, feel free to open an issue or submit a pull request. Please follow the contribution guidelines:
+
+1. **Fork the Repository**
+2. **Create a Feature Branch**
+3. **Commit Your Changes**
+4. **Push to Your Fork**
+5. **Create a Pull Request**
+
+## Issues
+
+If you encounter any issues or have questions, please open an issue on GitHub. We will do our best to help you out!
+
+## License
+
+This project is licensed under the CC0-1.0 License. See the [LICENSE](LICENSE) file for more details.
+
+## Acknowledgements
+
+- **Minecraft Modding Community**: For all the tutorials and support.
+- **FabricMC**: For providing a flexible modding platform.
+
+---
+
+Thank you for using the iBlocky Booster Notification Mod! Enjoy your enhanced gaming experience!
