@@ -4,7 +4,7 @@ Welcome to the **iBlocky Booster Notification Mod** repository! 🎉
 
 This mod is designed specifically for the **iBlocky Minecraft server** to enhance the player's experience by displaying active boosters and their remaining time directly on the in-game HUD.
 
-![image](https://github.com/user-attachments/assets/0d5ad8f3-f03e-4a6e-837f-334b8596e093)![image](https://github.com/user-attachments/assets/4e7d86c7-b645-452c-ba69-98a7cbdf10e5)
+![image](https://github.com/user-attachments/assets/8eab260b-0c05-4453-a98d-d106dc325aa9)![image](https://github.com/user-attachments/assets/4e7d86c7-b645-452c-ba69-98a7cbdf10e5)
 
 
 
