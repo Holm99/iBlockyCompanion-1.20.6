@@ -11,8 +11,6 @@ import net.minecraft.network.message.SignedMessage;
 import net.minecraft.text.Text;
 import com.mojang.authlib.GameProfile;
 import org.lwjgl.glfw.GLFW;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 import java.util.concurrent.Executors;
@@ -22,39 +20,31 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class iBlockyBoosterNotificationClient implements ClientModInitializer {
-    private static final Logger LOGGER = LoggerFactory.getLogger(iBlockyBoosterNotification.MOD_ID);
-    private boolean boosterChecked = false;
     private boolean isBoosterActive = false;
+    private boolean isRichBoosterActive = false;
 
-    // Pattern to match booster messages
+    // Pattern to match tokens booster messages
     private static final Pattern BOOSTER_PATTERN = Pattern.compile("\\s-\\sTokens\\s\\((\\d+(\\.\\d+)?)x\\)\\s\\((\\d+d\\s)?(\\d+h\\s)?(\\d+m\\s)?(\\d+s\\s)?remaining\\)", Pattern.CASE_INSENSITIVE);
 
-    // Pattern to identify "Boosters:" line in the chat
-    private static final Pattern BOOSTERS_HEADER_PATTERN = Pattern.compile("Boosters:", Pattern.CASE_INSENSITIVE);
+    // Pattern to match rich pet booster messages
+    private static final Pattern RICH_BOOSTER_PATTERN = Pattern.compile("iBlocky → Your Rich pet has rewarded you with a 2x sell booster for the next (\\d+d\\s)?(\\d+h\\s)?(\\d+m\\s)?(\\d+s)?!");
 
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
     @Override
     public void onInitializeClient() {
-        LOGGER.info("Booster Display Mod (Client) has been initialized!");
-
         HudRenderCallback.EVENT.register(new BoosterStatusWindow());
         registerMessageListeners();
-        scheduleBoosterCheck();
+        registerCountdownHandlers(); // Ensure countdown handlers are registered
         registerMouseEvents();
         registerLogoutEvent();
     }
 
     private void registerMessageListeners() {
-        LOGGER.info("Registering message listeners...");
-
         // Register client-side chat listener using lambda expression
         ClientReceiveMessageEvents.CHAT.register((Text message, SignedMessage signedMessage, GameProfile sender, MessageType.Parameters params, Instant receptionTimestamp) -> {
             String msg = message.getString(); // Convert Text object to plain String
-
-            // Check if message should be processed
             if (!msg.contains("Backpack Space")) {
-                LOGGER.info("Received client chat message: " + msg); // Log only if not ignored
                 processChatMessage(msg, false); // false indicates this is a chat message
             }
         });
@@ -62,81 +52,82 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
         // Register client-side game message listener
         ClientReceiveMessageEvents.GAME.register((Text message, boolean overlay) -> {
             String msg = message.getString(); // Convert Text to String
-
-            // Check if message should be processed
             if (!msg.contains("Backpack Space")) {
-                LOGGER.info("Received client game message: " + msg); // Log only if not ignored
                 processChatMessage(msg, true); // true indicates this is a game message
             }
         });
-
-        LOGGER.info("Message listeners registered successfully.");
     }
 
     private void processChatMessage(String msg, boolean isGameMessage) {
         // Ignore "Backpack Space" messages to reduce log spam
         if (msg.contains("Backpack Space")) {
-            return; // Skip processing and logging for this message
+            return; // Skip processing for this message
         }
 
-        // Log the incoming message only if it's not ignored
-        LOGGER.info("Processing message: " + msg + " | Is Game Message: " + isGameMessage);
+        // Check for tokens booster message
+        Matcher matcher = BOOSTER_PATTERN.matcher(msg);
+        if (matcher.find()) {
+            String multiplier = matcher.group(1); // Extract the multiplier value
+            String remaining = "";
 
-        // Check if the message contains "Boosters:" header
-        if (BOOSTERS_HEADER_PATTERN.matcher(msg).find()) {
-            boosterChecked = true;
-            LOGGER.info("Booster list detected, checking for boosters...");
-        }
-        // Check for booster details after the header
-        else if (boosterChecked) {
-            LOGGER.info("Processing potential booster message: " + msg);
+            // Collect all parts of remaining time
+            if (matcher.group(3) != null) remaining += matcher.group(3);
+            if (matcher.group(4) != null) remaining += matcher.group(4);
+            if (matcher.group(5) != null) remaining += matcher.group(5);
+            if (matcher.group(6) != null) remaining += matcher.group(6);
 
-            Matcher matcher = BOOSTER_PATTERN.matcher(msg);
+            // Ensure both matches are not null
+            if (multiplier != null && !remaining.isEmpty()) {
+                multiplier = multiplier.trim();
+                remaining = remaining.replace("remaining", "").trim();
 
-            if (matcher.find()) {
-                LOGGER.info("Booster detected with pattern match.");
+                // Update the BoosterStatusWindow with the active booster details
+                BoosterStatusWindow.setTokensBoosterActive(true, multiplier, remaining);
 
-                String multiplier = matcher.group(1); // Extract the multiplier value
-                String remaining = "";
+                // Convert the remaining time to seconds for countdown
+                int totalSeconds = parseTimeToSeconds(remaining);
 
-                // Collect all parts of remaining time
-                if (matcher.group(3) != null) remaining += matcher.group(3);
-                if (matcher.group(4) != null) remaining += matcher.group(4);
-                if (matcher.group(5) != null) remaining += matcher.group(5);
-                if (matcher.group(6) != null) remaining += matcher.group(6);
-
-                // Debug logs to inspect matcher groups
-                LOGGER.info("Matcher group 1 (multiplier): " + multiplier);
-                LOGGER.info("Parsed remaining time: " + remaining);
-
-                // Ensure both matches are not null
-                if (multiplier != null && !remaining.isEmpty()) {
-                    multiplier = multiplier.trim();
-                    remaining = remaining.replace("remaining", "").trim();
-
-                    LOGGER.info("Parsed Booster Info: Multiplier=" + multiplier + ", Remaining=" + remaining);
-
-                    // Update the BoosterStatusWindow with the active booster details
-                    BoosterStatusWindow.setBoosterActive(true, multiplier, remaining);
-
-                    // Convert the remaining time to seconds for countdown
-                    int totalSeconds = parseTimeToSeconds(remaining);
-                    LOGGER.info("Starting countdown for " + totalSeconds + " seconds.");
-
-                    // Mark booster as active and start the countdown
-                    isBoosterActive = true;
-                    startCountdown(totalSeconds);
-                } else {
-                    LOGGER.warn("Failed to parse booster information. Multiplier or remaining time is null.");
-                }
-
-            } else {
-                LOGGER.info("No booster detected or message does not match pattern: " + msg);
+                // Start countdown for Tokens Booster
+                BoosterStatusWindow.updateTokensBoosterCountdown(totalSeconds);
+                isBoosterActive = true;
             }
-            boosterChecked = false; // Reset the flag after processing booster info
-        } else {
-            LOGGER.info("Message does not indicate start of boosters or is out of context: " + msg);
         }
+
+        // Check for rich pet booster message
+        Matcher richMatcher = RICH_BOOSTER_PATTERN.matcher(msg);
+        if (richMatcher.find()) {
+            String remaining = "";
+
+            // Collect all parts of remaining time
+            if (richMatcher.group(1) != null) remaining += richMatcher.group(1);
+            if (richMatcher.group(2) != null) remaining += richMatcher.group(2);
+            if (richMatcher.group(3) != null) remaining += richMatcher.group(3);
+            if (richMatcher.group(4) != null) remaining += richMatcher.group(4);
+
+            // Ensure remaining time is not empty
+            if (!remaining.isEmpty()) {
+                remaining = remaining.trim();
+
+                // Update the BoosterStatusWindow with the rich pet booster details
+                BoosterStatusWindow.setRichBoosterActive(true, remaining);
+
+                // Convert the remaining time to seconds for countdown
+                int totalSeconds = parseTimeToSeconds(remaining);
+
+                // Start countdown for Rich Booster
+                BoosterStatusWindow.updateRichBoosterCountdown(totalSeconds);
+                isRichBoosterActive = true;
+            }
+        }
+    }
+
+    private void registerCountdownHandlers() {
+        ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            if (client.world != null) {
+                // Move countdown handling to BoosterStatusWindow directly
+                BoosterStatusWindow.handleCountdown();
+            }
+        });
     }
 
     private void registerMouseEvents() {
@@ -154,36 +145,11 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
         });
     }
 
-    private void scheduleBoosterCheck() {
-        scheduler.scheduleAtFixedRate(() -> {
-            if (!isBoosterActive) {
-                MinecraftClient client = MinecraftClient.getInstance();
-                client.execute(() -> {
-                    if (client.player != null) {
-                        LOGGER.info("Sending /booster command to check for active boosters.");
-                        client.player.networkHandler.sendChatMessage("/booster");
-                    }
-                });
-            } else {
-                LOGGER.info("Booster is currently active; skipping /booster check.");
-            }
-        }, 0, 60, TimeUnit.SECONDS);
-    }
-
-    private void startCountdown(int seconds) {
-        LOGGER.info("Scheduling countdown for booster expiration in {} seconds.", seconds);
-        scheduler.schedule(() -> {
-            LOGGER.info("Booster expired. Clearing booster information.");
-            BoosterStatusWindow.setBoosterActive(false, "", "");
-            isBoosterActive = false;
-        }, seconds, TimeUnit.SECONDS);
-    }
-
     private void registerLogoutEvent() {
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
-            LOGGER.info("Player logged off. Clearing booster information.");
             BoosterStatusWindow.clearBoosterInfo();
             isBoosterActive = false;
+            isRichBoosterActive = false;
         });
     }
 

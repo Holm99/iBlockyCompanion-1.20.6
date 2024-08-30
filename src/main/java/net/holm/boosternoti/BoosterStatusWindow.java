@@ -1,12 +1,11 @@
 package net.holm.boosternoti;
 
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.Formatting;  // Import for color and text formatting
+import net.minecraft.util.Formatting;
 
 public class BoosterStatusWindow implements HudRenderCallback {
 
@@ -16,67 +15,135 @@ public class BoosterStatusWindow implements HudRenderCallback {
     private static int mouseXOffset = 0;
     private static int mouseYOffset = 0;
     private static String boosterInfo = Formatting.RED + "Active Booster: ❌"; // Start with red color for no booster
-    private static String sellBoostInfo = Formatting.GRAY + "Sell Boost: N/A"; // Gray color for no active boost
-    private static String timeRemaining = Formatting.GRAY + "Time Remaining: N/A"; // Gray color for no remaining time
+    private static String sellBoostInfo = Formatting.RED + "Sell Boost: N/A"; // RED color for no active boost
+    private static String timeRemaining = Formatting.RED + "Tokens Booster: N/A"; // RED color for no remaining time
+    private static String richBoosterTimeRemaining = Formatting.RED + "Rich Booster: N/A"; // RED color for no rich booster
 
-    private static int remainingSeconds = 0;
-    private static boolean isCountingDown = false;
+    private static int tokensBoosterRemainingSeconds = 0;
+    private static int richBoosterRemainingSeconds = 0;
+    private static long lastUpdateTime = System.nanoTime(); // Initialize with current time
 
     public BoosterStatusWindow() {
-        ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            if (isCountingDown && remainingSeconds > 0) {
-                assert client.world != null;
-                if (client.world.getTime() % 20 == 0) {
-                    remainingSeconds--;
-                    updateDisplayTime();
-                }
-            }
-        });
+        // Removed TickEvent from here; it is now in handleCountdown()
     }
 
-    public static void setBoosterActive(boolean active, String multiplier, String time) {
+    public static void handleCountdown() {
+        long currentTime = System.nanoTime();
+        long elapsedMilliseconds = (currentTime - lastUpdateTime) / 1_000_000; // Convert nanoseconds to milliseconds
+
+        // Check if at least 1000 milliseconds (1 second) have passed
+        if (elapsedMilliseconds >= 1000) {
+            if (tokensBoosterRemainingSeconds > 0) {
+                tokensBoosterRemainingSeconds--;
+            }
+
+            if (richBoosterRemainingSeconds > 0) {
+                richBoosterRemainingSeconds--;
+            }
+
+            lastUpdateTime = currentTime; // Reset last update time to current time
+
+            // Update the display after decrementing
+            updateTokensBoosterTime();
+            updateRichBoosterTime();
+        }
+    }
+
+    public static void setTokensBoosterActive(boolean active, String multiplier, String time) {
         if (active) {
             boosterInfo = Formatting.GREEN + "Active Booster: ✔"; // Green color for active booster
             sellBoostInfo = Formatting.GOLD + "Sell Boost: " + Formatting.YELLOW + multiplier + "x"; // Gold and Yellow for boost details
-            remainingSeconds = parseTimeToSeconds(time);
-            isCountingDown = true;
-            updateDisplayTime();
+            tokensBoosterRemainingSeconds = parseTimeToSeconds(time);
+            updateTokensBoosterTime();
         } else {
             boosterInfo = Formatting.RED + "Active Booster: ❌"; // Red color for inactive booster
-            sellBoostInfo = Formatting.GRAY + "Sell Boost: N/A";
-            timeRemaining = Formatting.GRAY + "Time Remaining: N/A";
-            isCountingDown = false;
+            sellBoostInfo = Formatting.RED + "Sell Boost: N/A";
+            timeRemaining = Formatting.RED + "Tokens Booster: N/A";
+            tokensBoosterRemainingSeconds = 0;
+        }
+    }
+
+    public static void setRichBoosterActive(boolean active, String time) {
+        if (active) {
+            richBoosterTimeRemaining = Formatting.GREEN + "Rich Booster: ✔"; // Green color for active booster
+            richBoosterRemainingSeconds = parseTimeToSeconds(time);
+            updateRichBoosterTime();
+        } else {
+            richBoosterTimeRemaining = Formatting.RED + "Rich Booster: N/A";
+            richBoosterRemainingSeconds = 0;
+        }
+    }
+
+    public static void updateTokensBoosterCountdown(int seconds) {
+        tokensBoosterRemainingSeconds = seconds;
+        updateTokensBoosterTime();
+    }
+
+    public static void updateRichBoosterCountdown(int seconds) {
+        richBoosterRemainingSeconds = seconds;
+        updateRichBoosterTime();
+    }
+
+    private static void updateTokensBoosterTime() {
+        if (tokensBoosterRemainingSeconds > 0) {
+            timeRemaining = Formatting.AQUA + "Tokens Booster: " + formatTime(tokensBoosterRemainingSeconds); // Prefix for tokens booster
+        } else {
+            timeRemaining = Formatting.RED + "Tokens Booster: N/A";
+        }
+    }
+
+    private static void updateRichBoosterTime() {
+        if (richBoosterRemainingSeconds > 0) {
+            richBoosterTimeRemaining = Formatting.AQUA + "Rich Booster: " + formatTime(richBoosterRemainingSeconds); // Prefix for rich booster
+        } else {
+            richBoosterTimeRemaining = Formatting.RED + "Rich Booster: N/A";
         }
     }
 
     public static void clearBoosterInfo() {
         boosterInfo = Formatting.RED + "Active Booster: ❌";
-        sellBoostInfo = Formatting.GRAY + "Sell Boost: N/A";
-        timeRemaining = Formatting.GRAY + "Time Remaining: N/A";
-        remainingSeconds = 0;
-        isCountingDown = false;
+        sellBoostInfo = Formatting.RED + "Sell Boost: N/A";
+        timeRemaining = Formatting.RED + "Tokens Booster: N/A";
+        richBoosterTimeRemaining = Formatting.RED + "Rich Booster: N/A";
+        tokensBoosterRemainingSeconds = 0;
+        richBoosterRemainingSeconds = 0;
     }
 
-    private static void updateDisplayTime() {
-        int days = remainingSeconds / 86400;
-        int hours = (remainingSeconds % 86400) / 3600;
-        int minutes = (remainingSeconds % 3600) / 60;
-        int seconds = remainingSeconds % 60;
+    public static int getTokensBoosterRemainingSeconds() {
+        return tokensBoosterRemainingSeconds;
+    }
 
-        timeRemaining = Formatting.AQUA + String.format("Time Remaining: %dd %dh %dm %ds", days, hours, minutes, seconds);
+    public static int getRichBoosterRemainingSeconds() {
+        return richBoosterRemainingSeconds;
+    }
+
+    private static String formatTime(int totalSeconds) {
+        int hours = totalSeconds / 3600;
+        int minutes = (totalSeconds % 3600) / 60;
+        int seconds = totalSeconds % 60;
+
+        // Trim hours if they are zero
+        if (hours > 0) {
+            return Formatting.AQUA + String.format("%dh %dm %ds", hours, minutes, seconds);
+        } else if (minutes > 0) {
+            return Formatting.AQUA + String.format("%dm %ds", minutes, seconds);
+        } else {
+            return Formatting.AQUA + String.format("%ds", seconds);
+        }
     }
 
     @Override
     public void onHudRender(DrawContext drawContext, float tickDelta) {
         MinecraftClient client = MinecraftClient.getInstance();
         int windowWidth = 150;
-        int windowHeight = 65;
+        int windowHeight = 80;
 
         drawContext.fill(windowX, windowY, windowX + windowWidth, windowY + windowHeight, 0x80000000);
 
         drawContext.drawTextWithShadow(client.textRenderer, Text.of(boosterInfo), windowX + 5, windowY + 5, 0xFFFFFF);
         drawContext.drawTextWithShadow(client.textRenderer, Text.of(sellBoostInfo), windowX + 5, windowY + 20, 0xFFFFFF);
         drawContext.drawTextWithShadow(client.textRenderer, Text.of(timeRemaining), windowX + 5, windowY + 35, 0xFFFFFF);
+        drawContext.drawTextWithShadow(client.textRenderer, Text.of(richBoosterTimeRemaining), windowX + 5, windowY + 50, 0xFFFFFF);
 
         if (isDragging) {
             double mouseX = client.mouse.getX() / client.getWindow().getScaleFactor();
@@ -87,7 +154,7 @@ public class BoosterStatusWindow implements HudRenderCallback {
     }
 
     public static void handleMousePress(double mouseX, double mouseY) {
-        if (mouseX >= windowX && mouseX <= windowX + 150 && mouseY >= windowY && mouseY <= windowY + 65) {
+        if (mouseX >= windowX && mouseX <= windowX + 150 && mouseY >= windowY && mouseY <= windowY + 80) {
             isDragging = true;
             mouseXOffset = (int) (mouseX - windowX);
             mouseYOffset = (int) (mouseY - windowY);
