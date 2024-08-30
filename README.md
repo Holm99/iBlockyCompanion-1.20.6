@@ -22,7 +22,6 @@ This mod is designed specifically for the **iBlocky Minecraft server** to enhanc
 - **Dynamic Countdown**: Real-time countdown for boosters like "Tokens" and "Rich Pet" boosters.
 - **Customizable Position**: Easily drag and drop the HUD elements to reposition them on your screen.
 - **Lightweight**: Built with performance in mind, ensuring minimal impact on game performance.
-- **Configurable Logging**: Logs mod activity to a custom log file (`iBlockynotify.log`) to keep your `latest.log` clean.
 
 ## Installation
 
