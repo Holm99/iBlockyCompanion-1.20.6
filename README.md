@@ -31,7 +31,7 @@ This mod is designed specifically for the **iBlocky Minecraft server** to enhanc
 2. **Install Fabric Loader**: Make sure you have **Fabric Loader 0.16.3** installed for Minecraft **1.20.6**. You can download it from [Fabric's official website](https://fabricmc.net/use/).
 3. **Install Fabric API**: This mod requires **Fabric API version 0.100.8+1.20.6**. Download it from [CurseForge](https://www.curseforge.com/minecraft/mc-mods/fabric-api/files/all?page=1&pageSize=20&version=1.20.6&gameVersionTypeId=4).
 4. **Install Java 21**: Ensure that you have Java 21 installed. You can download it from [Oracle's official website](https://www.oracle.com/java/technologies/javase/jdk21-archive-downloads.html).
-5. **Add the Mod to Your Mods Folder**: Place the downloaded mod `.jar` file into your `.minecraft/mods` folder.
+5. **Add the Mod to Your Mods Folder**: Place the two downloaded mods (Fabric API and my mod) into your `C:\Users\yourusernamehere\AppData\Roaming\.minecraft\mods` folder. (If the mods fodler do not exist just create it)
 6. **Launch Minecraft**: Start the game using the Fabric profile.
 
 ## Usage
