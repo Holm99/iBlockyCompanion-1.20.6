@@ -7,7 +7,17 @@ This mod is designed specifically for the **iBlocky Minecraft server** to enhanc
 ![image](https://github.com/user-attachments/assets/8eab260b-0c05-4453-a98d-d106dc325aa9)![image](https://github.com/user-attachments/assets/4e7d86c7-b645-452c-ba69-98a7cbdf10e5)
 
 
+## Installation
 
+Following the YouTube tutorial is probably easier :)
+**[Youtube tutorial](https://youtu.be/UYzXPUDZ3gw?si=zAk-UiDwzFPrTRGY)**
+1. **Download the Mod**: Grab the latest release from the [Releases](https://github.com/Holm99/iblocky-boosternotification-1.20.6/releases) page.
+2. **Download Fabric Loader**: Download **Fabric Loader** from [Fabric's official website](https://fabricmc.net/use/).
+3. **Install Fabric Loader**: Open the application and Select **Minecraft version 1.20.6** & **Loader Version 0.16.3** then click install!
+4. **Install Fabric API**: This mod requires **Fabric API version 0.100.8+1.20.6**. So open the link but DO NOT click the download button on the top right, select **Fabric API version 0.100.8+1.20.6** below, (Three dots and download file). Download it from [CurseForge](https://www.curseforge.com/minecraft/mc-mods/fabric-api/files/all?page=1&pageSize=20&version=1.20.6&gameVersionTypeId=4).
+5. **Install Java 21**: Ensure that you have Java 21 installed. You can download it from [Oracle's official website](https://www.oracle.com/java/technologies/javase/jdk21-archive-downloads.html).
+6. **Add the Mod to Your Mods Folder**: Place the two downloaded mods (Fabric API and my mod) into your (Do Windows key + R    and type `%appdata%\.minecraft`) `C:\Users\yourusernamehere\AppData\Roaming\.minecraft\mods` folder. (If the mods folder do not exist just create it)
+7. **Launch Minecraft**: Start the game using the Fabric profile.
 
 ## Compatibility
 
@@ -25,14 +35,6 @@ This mod is designed specifically for the **iBlocky Minecraft server** to enhanc
 - **Customizable Position**: Easily drag and drop the HUD elements to reposition them on your screen.
 - **Lightweight**: Built with performance in mind, ensuring minimal impact on game performance.
 
-## Installation
-
-1. **Download the Mod**: Grab the latest release from the [Releases](https://github.com/Holm99/iblocky-boosternotification-1.20.6/releases) page.
-2. **Install Fabric Loader**: Make sure you have **Fabric Loader 0.16.3** installed for Minecraft **1.20.6**. You can download it from [Fabric's official website](https://fabricmc.net/use/).
-3. **Install Fabric API**: This mod requires **Fabric API version 0.100.8+1.20.6**. Download it from [CurseForge](https://www.curseforge.com/minecraft/mc-mods/fabric-api/files/all?page=1&pageSize=20&version=1.20.6&gameVersionTypeId=4).
-4. **Install Java 21**: Ensure that you have Java 21 installed. You can download it from [Oracle's official website](https://www.oracle.com/java/technologies/javase/jdk21-archive-downloads.html).
-5. **Add the Mod to Your Mods Folder**: Place the downloaded mod `.jar` file into your `.minecraft/mods` folder.
-6. **Launch Minecraft**: Start the game using the Fabric profile.
 
 ## Usage
 
