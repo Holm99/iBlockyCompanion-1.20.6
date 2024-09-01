@@ -9,7 +9,8 @@ This mod is designed specifically for the **iBlocky Minecraft server** to enhanc
 
 ## Installation
 
-[Youtube tutorial](https://youtu.be/UYzXPUDZ3gw?si=zAk-UiDwzFPrTRGY)
+Following the YouTube tutorial is probably easier :)
+**[Youtube tutorial](https://youtu.be/UYzXPUDZ3gw?si=zAk-UiDwzFPrTRGY)**
 1. **Download the Mod**: Grab the latest release from the [Releases](https://github.com/Holm99/iblocky-boosternotification-1.20.6/releases) page.
 2. **Download Fabric Loader**: Download **Fabric Loader** from [Fabric's official website](https://fabricmc.net/use/).
 3. **Install Fabric Loader**: Open the application and Select **Minecraft version 1.20.6** & **Loader Version 0.16.3** then click install!
