@@ -99,38 +99,59 @@ public class BoosterStatusWindow implements HudRenderCallback {
     }
 
     private static String formatTime(int totalSeconds) {
-        int hours = totalSeconds / 3600;
+        int days = totalSeconds / 86400;
+        int hours = (totalSeconds % 86400) / 3600;
         int minutes = (totalSeconds % 3600) / 60;
         int seconds = totalSeconds % 60;
 
-        // Trim hours if they are zero
-        if (hours > 0) {
-            return Formatting.AQUA + String.format("%dh %dm %ds", hours, minutes, seconds);
-        } else if (minutes > 0) {
-            return Formatting.AQUA + String.format("%dm %ds", minutes, seconds);
-        } else {
-            return Formatting.AQUA + String.format("%ds", seconds);
+        StringBuilder formattedTime = new StringBuilder();
+        if (days > 0) {
+            formattedTime.append(days).append("d ");
         }
+        if (hours > 0 || days > 0) {  // Show hours if there are any days or hours
+            formattedTime.append(hours).append("h ");
+        }
+        if (minutes > 0 || hours > 0 || days > 0) {  // Show minutes if there are any days, hours, or minutes
+            formattedTime.append(minutes).append("m ");
+        }
+        formattedTime.append(seconds).append("s");
+
+        return formattedTime.toString();
     }
 
     @Override
     public void onHudRender(DrawContext drawContext, float tickDelta) {
         MinecraftClient client = MinecraftClient.getInstance();
-        int windowWidth = 150;
-        int windowHeight = 80;
+        int padding = 5;
+        int lineHeight = 15;
+
+        int longestTextWidth = Math.max(
+                Math.max(client.textRenderer.getWidth(boosterInfo), client.textRenderer.getWidth(sellBoostInfo)),
+                Math.max(client.textRenderer.getWidth(timeRemaining), client.textRenderer.getWidth(richBoosterTimeRemaining))
+        );
+
+        int windowWidth = longestTextWidth + 2 * padding;
+        int windowHeight = 4 * lineHeight + 2 * padding;
 
         drawContext.fill(windowX, windowY, windowX + windowWidth, windowY + windowHeight, 0x80000000);
 
-        drawContext.drawTextWithShadow(client.textRenderer, Text.of(boosterInfo), windowX + 5, windowY + 5, 0xFFFFFF);
-        drawContext.drawTextWithShadow(client.textRenderer, Text.of(sellBoostInfo), windowX + 5, windowY + 20, 0xFFFFFF);
-        drawContext.drawTextWithShadow(client.textRenderer, Text.of(timeRemaining), windowX + 5, windowY + 35, 0xFFFFFF);
-        drawContext.drawTextWithShadow(client.textRenderer, Text.of(richBoosterTimeRemaining), windowX + 5, windowY + 50, 0xFFFFFF);
+        drawContext.drawTextWithShadow(client.textRenderer, Text.of(boosterInfo), windowX + padding, windowY + padding, 0xFFFFFF);
+        drawContext.drawTextWithShadow(client.textRenderer, Text.of(sellBoostInfo), windowX + padding, windowY + padding + lineHeight, 0xFFFFFF);
+        drawContext.drawTextWithShadow(client.textRenderer, Text.of(timeRemaining), windowX + padding, windowY + padding + lineHeight * 2, 0xFFFFFF);
+        drawContext.drawTextWithShadow(client.textRenderer, Text.of(richBoosterTimeRemaining), windowX + padding, windowY + padding + lineHeight * 3, 0xFFFFFF);
 
         if (isDragging) {
             double mouseX = client.mouse.getX() / client.getWindow().getScaleFactor();
             double mouseY = client.mouse.getY() / client.getWindow().getScaleFactor();
             windowX = MathHelper.floor(mouseX - mouseXOffset);
             windowY = MathHelper.floor(mouseY - mouseYOffset);
+
+            // Ensure window stays within screen bounds
+            int screenWidth = client.getWindow().getScaledWidth();
+            int screenHeight = client.getWindow().getScaledHeight();
+
+            windowX = MathHelper.clamp(windowX, 0, screenWidth - windowWidth);
+            windowY = MathHelper.clamp(windowY, 0, screenHeight - windowHeight);
         }
     }
 
@@ -144,6 +165,10 @@ public class BoosterStatusWindow implements HudRenderCallback {
 
     public static void handleMouseRelease() {
         isDragging = false;
+    }
+
+    public static void handleScreenClose() {
+        isDragging = false; // Ensure dragging stops when screen is closed or changed
     }
 
     private static int parseTimeToSeconds(String time) {

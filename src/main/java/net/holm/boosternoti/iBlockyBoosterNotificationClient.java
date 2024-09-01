@@ -1,11 +1,15 @@
 package net.holm.boosternoti;
 
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.option.KeyBinding;
+import net.minecraft.client.util.InputUtil;
 import net.minecraft.network.message.MessageType;
 import net.minecraft.network.message.SignedMessage;
 import net.minecraft.text.Text;
@@ -19,6 +23,7 @@ import java.util.regex.Pattern;
 public class iBlockyBoosterNotificationClient implements ClientModInitializer {
     private boolean isBoosterActive = false;
     private boolean isRichBoosterActive = false;
+    private static KeyBinding boosterKeyBinding;
 
     // Pattern to match tokens booster messages
     private static final Pattern BOOSTER_PATTERN = Pattern.compile("\\s-\\sTokens\\s\\((\\d+(\\.\\d+)?)x\\)\\s\\((\\d+d\\s)?(\\d+h\\s)?(\\d+m\\s)?(\\d+s\\s)?remaining\\)", Pattern.CASE_INSENSITIVE);
@@ -30,8 +35,18 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
     public void onInitializeClient() {
         HudRenderCallback.EVENT.register(new BoosterStatusWindow());
         registerMessageListeners();
-        registerMouseEvents();  // Retain this for mouse dragging
+        registerMouseEvents();
         registerLogoutEvent();
+        registerKeyBindings(); // Register the new key binding
+        registerKeyPressEvent(); // Register the key press event handler
+
+        // Register screen close or change event to reset dragging state
+        ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            // Check if the current screen is null (no screen open) and reset dragging state
+            if (MinecraftClient.getInstance().currentScreen == null) {
+                BoosterStatusWindow.handleScreenClose();
+            }
+        });
     }
 
     private void registerMessageListeners() {
@@ -122,6 +137,32 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
             isBoosterActive = false;
             isRichBoosterActive = false;
         });
+    }
+
+    private void registerKeyBindings() {
+        // Registering a new key binding for the 'B' key
+        boosterKeyBinding = new KeyBinding(
+                "key.boosternoti.booster", // The translation key of the keybinding's name
+                InputUtil.Type.KEYSYM, // The type of input, KEYSYM for keyboard keys
+                GLFW.GLFW_KEY_B, // The keycode of the key
+                "category.boosternoti.general" // The translation key of the keybinding's category
+        );
+        // Register the keybinding
+        KeyBindingHelper.registerKeyBinding(boosterKeyBinding);
+    }
+
+    private void registerKeyPressEvent() {
+        ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            if (boosterKeyBinding.wasPressed()) {
+                sendBoosterCommand();
+            }
+        });
+    }
+
+    private void sendBoosterCommand() {
+        if (MinecraftClient.getInstance().player != null) {
+            MinecraftClient.getInstance().player.networkHandler.sendChatCommand("booster");
+        }
     }
 
     private int parseTimeToSeconds(String time) {
