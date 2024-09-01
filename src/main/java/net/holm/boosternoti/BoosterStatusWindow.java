@@ -7,6 +7,10 @@ import net.minecraft.text.Text;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.Formatting;
 
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
 public class BoosterStatusWindow implements HudRenderCallback {
 
     private static boolean isDragging = false;
@@ -21,32 +25,27 @@ public class BoosterStatusWindow implements HudRenderCallback {
 
     private static int tokensBoosterRemainingSeconds = 0;
     private static int richBoosterRemainingSeconds = 0;
-    private static long lastUpdateTime = System.nanoTime(); // Initialize with current time
 
-    public BoosterStatusWindow() {
-        // Removed TickEvent from here; it is now in handleCountdown()
+    // Use a ScheduledExecutorService for managing countdowns
+    private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+
+    // Static initializer to start the scheduler
+    static {
+        scheduler.scheduleAtFixedRate(() -> handleCountdown(), 0, 1, TimeUnit.SECONDS);
     }
 
     public static void handleCountdown() {
-        long currentTime = System.nanoTime();
-        long elapsedMilliseconds = (currentTime - lastUpdateTime) / 1_000_000; // Convert nanoseconds to milliseconds
-
-        // Check if at least 1000 milliseconds (1 second) have passed
-        if (elapsedMilliseconds >= 1000) {
-            if (tokensBoosterRemainingSeconds > 0) {
-                tokensBoosterRemainingSeconds--;
-            }
-
-            if (richBoosterRemainingSeconds > 0) {
-                richBoosterRemainingSeconds--;
-            }
-
-            lastUpdateTime = currentTime; // Reset last update time to current time
-
-            // Update the display after decrementing
-            updateTokensBoosterTime();
-            updateRichBoosterTime();
+        if (tokensBoosterRemainingSeconds > 0) {
+            tokensBoosterRemainingSeconds--;
         }
+
+        if (richBoosterRemainingSeconds > 0) {
+            richBoosterRemainingSeconds--;
+        }
+
+        // Update the display after decrementing
+        updateTokensBoosterTime();
+        updateRichBoosterTime();
     }
 
     public static void setTokensBoosterActive(boolean active, String multiplier, String time) {
@@ -74,16 +73,6 @@ public class BoosterStatusWindow implements HudRenderCallback {
         }
     }
 
-    public static void updateTokensBoosterCountdown(int seconds) {
-        tokensBoosterRemainingSeconds = seconds;
-        updateTokensBoosterTime();
-    }
-
-    public static void updateRichBoosterCountdown(int seconds) {
-        richBoosterRemainingSeconds = seconds;
-        updateRichBoosterTime();
-    }
-
     private static void updateTokensBoosterTime() {
         if (tokensBoosterRemainingSeconds > 0) {
             timeRemaining = Formatting.AQUA + "Tokens Booster: " + formatTime(tokensBoosterRemainingSeconds); // Prefix for tokens booster
@@ -107,14 +96,6 @@ public class BoosterStatusWindow implements HudRenderCallback {
         richBoosterTimeRemaining = Formatting.RED + "Rich Booster: N/A";
         tokensBoosterRemainingSeconds = 0;
         richBoosterRemainingSeconds = 0;
-    }
-
-    public static int getTokensBoosterRemainingSeconds() {
-        return tokensBoosterRemainingSeconds;
-    }
-
-    public static int getRichBoosterRemainingSeconds() {
-        return richBoosterRemainingSeconds;
     }
 
     private static String formatTime(int totalSeconds) {

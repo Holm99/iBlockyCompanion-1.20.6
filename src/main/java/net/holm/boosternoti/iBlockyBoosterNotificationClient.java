@@ -2,9 +2,9 @@ package net.holm.boosternoti;
 
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.network.message.MessageType;
 import net.minecraft.network.message.SignedMessage;
@@ -13,9 +13,6 @@ import com.mojang.authlib.GameProfile;
 import org.lwjgl.glfw.GLFW;
 
 import java.time.Instant;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -29,14 +26,11 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
     // Pattern to match rich pet booster messages
     private static final Pattern RICH_BOOSTER_PATTERN = Pattern.compile("iBlocky → Your Rich pet has rewarded you with a 2x sell booster for the next (\\d+d\\s)?(\\d+h\\s)?(\\d+m\\s)?(\\d+s)?!");
 
-    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-
     @Override
     public void onInitializeClient() {
         HudRenderCallback.EVENT.register(new BoosterStatusWindow());
         registerMessageListeners();
-        registerCountdownHandlers(); // Ensure countdown handlers are registered
-        registerMouseEvents();
+        registerMouseEvents();  // Retain this for mouse dragging
         registerLogoutEvent();
     }
 
@@ -84,11 +78,6 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
                 // Update the BoosterStatusWindow with the active booster details
                 BoosterStatusWindow.setTokensBoosterActive(true, multiplier, remaining);
 
-                // Convert the remaining time to seconds for countdown
-                int totalSeconds = parseTimeToSeconds(remaining);
-
-                // Start countdown for Tokens Booster
-                BoosterStatusWindow.updateTokensBoosterCountdown(totalSeconds);
                 isBoosterActive = true;
             }
         }
@@ -111,23 +100,9 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
                 // Update the BoosterStatusWindow with the rich pet booster details
                 BoosterStatusWindow.setRichBoosterActive(true, remaining);
 
-                // Convert the remaining time to seconds for countdown
-                int totalSeconds = parseTimeToSeconds(remaining);
-
-                // Start countdown for Rich Booster
-                BoosterStatusWindow.updateRichBoosterCountdown(totalSeconds);
                 isRichBoosterActive = true;
             }
         }
-    }
-
-    private void registerCountdownHandlers() {
-        ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            if (client.world != null) {
-                // Move countdown handling to BoosterStatusWindow directly
-                BoosterStatusWindow.handleCountdown();
-            }
-        });
     }
 
     private void registerMouseEvents() {
