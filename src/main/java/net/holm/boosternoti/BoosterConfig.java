@@ -3,6 +3,8 @@ package net.holm.boosternoti;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileReader;
@@ -13,6 +15,7 @@ public class BoosterConfig {
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final File CONFIG_FILE = new File("config/iblocky_boosternoti.json");
+    private static final Logger LOGGER = LoggerFactory.getLogger(BoosterConfig.class);
 
     public int windowX = 100; // Default X position
     public int windowY = 100; // Default Y position
@@ -23,7 +26,7 @@ public class BoosterConfig {
             try (FileReader reader = new FileReader(CONFIG_FILE)) {
                 return GSON.fromJson(reader, BoosterConfig.class);
             } catch (IOException | JsonSyntaxException e) {
-                System.err.println("Failed to load config file: " + e.getMessage());
+                LOGGER.error("Failed to load config file: {}", e.getMessage(), e);
             }
         }
         return new BoosterConfig(); // Return default config if file does not exist
@@ -34,7 +37,7 @@ public class BoosterConfig {
         try (FileWriter writer = new FileWriter(CONFIG_FILE)) {
             GSON.toJson(this, writer);
         } catch (IOException e) {
-            System.err.println("Failed to save config file: " + e.getMessage());
+            LOGGER.error("Failed to save config file: {}", e.getMessage(), e);
         }
     }
 }

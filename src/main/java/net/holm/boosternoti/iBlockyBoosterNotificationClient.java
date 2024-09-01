@@ -62,21 +62,19 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
         Matcher matcher = BOOSTER_PATTERN.matcher(msg);
         if (matcher.find()) {
             String multiplier = matcher.group(1); // Extract the multiplier value
-            String remaining = "";
+            StringBuilder remaining = new StringBuilder();
 
             // Collect all parts of remaining time
-            if (matcher.group(3) != null) remaining += matcher.group(3);
-            if (matcher.group(4) != null) remaining += matcher.group(4);
-            if (matcher.group(5) != null) remaining += matcher.group(5);
-            if (matcher.group(6) != null) remaining += matcher.group(6);
+            for (int i = 3; i <= 6; i++) {
+                if (matcher.group(i) != null) remaining.append(matcher.group(i));
+            }
 
-            // Ensure both matches are not null
-            if (multiplier != null && !remaining.isEmpty()) {
+            if (multiplier != null && (!remaining.isEmpty())) {
                 multiplier = multiplier.trim();
-                remaining = remaining.replace("remaining", "").trim();
+                remaining = new StringBuilder(remaining.toString().replace("remaining", "").trim());
 
                 // Update the BoosterStatusWindow with the active booster details
-                BoosterStatusWindow.setTokensBoosterActive(true, multiplier, remaining);
+                BoosterStatusWindow.setTokensBoosterActive(true, multiplier, remaining.toString());
 
                 isBoosterActive = true;
             }
@@ -85,20 +83,18 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
         // Check for rich pet booster message
         Matcher richMatcher = RICH_BOOSTER_PATTERN.matcher(msg);
         if (richMatcher.find()) {
-            String remaining = "";
+            StringBuilder remaining = new StringBuilder();
 
             // Collect all parts of remaining time
-            if (richMatcher.group(1) != null) remaining += richMatcher.group(1);
-            if (richMatcher.group(2) != null) remaining += richMatcher.group(2);
-            if (richMatcher.group(3) != null) remaining += richMatcher.group(3);
-            if (richMatcher.group(4) != null) remaining += richMatcher.group(4);
+            for (int i = 1; i <= 4; i++) {
+                if (richMatcher.group(i) != null) remaining.append(richMatcher.group(i));
+            }
 
-            // Ensure remaining time is not empty
             if (!remaining.isEmpty()) {
-                remaining = remaining.trim();
+                remaining = new StringBuilder(remaining.toString().trim());
 
                 // Update the BoosterStatusWindow with the rich pet booster details
-                BoosterStatusWindow.setRichBoosterActive(true, remaining);
+                BoosterStatusWindow.setRichBoosterActive(true, remaining.toString());
 
                 isRichBoosterActive = true;
             }

@@ -11,7 +11,6 @@ public class iBlockyBoosterNotification implements ModInitializer {
 	@Override
 	public void onInitialize() {
 		LOGGER.info("Booster Display Mod has been initialized!");
-		// Initialize any necessary server-side or common logic here
 		BoosterDisplayManager.initialize();  // Placeholder for any future logic
 	}
 }

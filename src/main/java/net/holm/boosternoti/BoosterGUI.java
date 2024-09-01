@@ -19,14 +19,13 @@ public class BoosterGUI {
         }
     }
 
+    // Update booster information
     public static void updateBoosterInfo(String multiplier, String remaining) {
         boosterInfo = "Booster: " + multiplier + ", Time Left: " + remaining;
     }
 
+    // Clear booster information
     public static void clearBoosterInfo() {
         boosterInfo = ""; // Clear the booster information
-    }
-
-    public static void render(DrawContext drawContext, float v) {
     }
 }

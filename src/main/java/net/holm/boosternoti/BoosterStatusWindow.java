@@ -4,8 +4,8 @@ import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.text.Text;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.math.MathHelper;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -31,10 +31,10 @@ public class BoosterStatusWindow implements HudRenderCallback {
 
     // Static initializer to start the scheduler
     static {
-        scheduler.scheduleAtFixedRate(() -> handleCountdown(), 0, 1, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(BoosterStatusWindow::handleCountdown, 0, 1, TimeUnit.SECONDS);
     }
 
-    public static void handleCountdown() {
+    private static void handleCountdown() {
         if (tokensBoosterRemainingSeconds > 0) {
             tokensBoosterRemainingSeconds--;
         }
