@@ -6,13 +6,12 @@ import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.text.Text;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.network.message.MessageType;
 import net.minecraft.network.message.SignedMessage;
-import net.minecraft.text.Text;
 import com.mojang.authlib.GameProfile;
 import org.lwjgl.glfw.GLFW;
 
@@ -48,6 +47,7 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
             }
         });
     }
+
 
     private void registerMessageListeners() {
         // Register client-side chat listener using lambda expression
@@ -147,8 +147,16 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
                 GLFW.GLFW_KEY_B, // The keycode of the key
                 "category.boosternoti.general" // The translation key of the keybinding's category
         );
+
         // Register the keybinding
         KeyBindingHelper.registerKeyBinding(boosterKeyBinding);
+
+        // Register the key press event to handle fetching the rank
+        ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            if (boosterKeyBinding.wasPressed()) {
+                sendBoosterCommand(); // Existing functionality to send the command
+            }
+        });
     }
 
     private void registerKeyPressEvent() {
