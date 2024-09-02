@@ -18,18 +18,15 @@ public class BoosterStatusWindow implements HudRenderCallback {
     private static int windowY = 100;
     private static int mouseXOffset = 0;
     private static int mouseYOffset = 0;
-    private static String boosterInfo = Formatting.RED + "Active Booster: ❌"; // Start with red color for no booster
-    private static String sellBoostInfo = Formatting.RED + "Sell Boost: N/A"; // RED color for no active boost
-    private static String timeRemaining = Formatting.RED + "Tokens Booster: N/A"; // RED color for no remaining time
-    private static String richBoosterTimeRemaining = Formatting.RED + "Rich Booster: N/A"; // RED color for no rich booster
+    private static String sellBoostInfo = Formatting.RED + "Sell Boost: N/A";
+    private static String timeRemaining = Formatting.RED + "Tokens Booster: N/A";
+    private static String richBoosterTimeRemaining = Formatting.RED + "Rich Booster: N/A";
 
     private static int tokensBoosterRemainingSeconds = 0;
     private static int richBoosterRemainingSeconds = 0;
 
-    // Use a ScheduledExecutorService for managing countdowns
     private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
-    // Static initializer to start the scheduler
     static {
         scheduler.scheduleAtFixedRate(BoosterStatusWindow::handleCountdown, 0, 1, TimeUnit.SECONDS);
     }
@@ -43,59 +40,59 @@ public class BoosterStatusWindow implements HudRenderCallback {
             richBoosterRemainingSeconds--;
         }
 
-        // Update the display after decrementing
         updateTokensBoosterTime();
         updateRichBoosterTime();
     }
 
+    public static void updateSellBoostDisplay(double totalSellBoost) {
+        sellBoostInfo = Formatting.GOLD + "Sell Boost: " + Formatting.YELLOW + String.format("%.2f", totalSellBoost) + "x";
+    }
+
     public static void setTokensBoosterActive(boolean active, String multiplier, String time) {
         if (active) {
-            boosterInfo = Formatting.GREEN + "Active Booster: ✔"; // Green color for active booster
-            sellBoostInfo = Formatting.GOLD + "Sell Boost: " + Formatting.YELLOW + multiplier + "x"; // Gold and Yellow for boost details
             tokensBoosterRemainingSeconds = parseTimeToSeconds(time);
-            updateTokensBoosterTime();
+            SellBoostCalculator.setTokenBoost(Double.parseDouble(multiplier));
         } else {
-            boosterInfo = Formatting.RED + "Active Booster: ❌"; // Red color for inactive booster
-            sellBoostInfo = Formatting.RED + "Sell Boost: N/A";
-            timeRemaining = Formatting.RED + "Tokens Booster: N/A";
-            tokensBoosterRemainingSeconds = 0;
+            SellBoostCalculator.setTokenBoost(1.0);
         }
+        updateTokensBoosterTime();
     }
 
     public static void setRichBoosterActive(boolean active, String time) {
         if (active) {
-            richBoosterTimeRemaining = Formatting.GREEN + "Rich Booster: ✔"; // Green color for active booster
             richBoosterRemainingSeconds = parseTimeToSeconds(time);
-            updateRichBoosterTime();
+            SellBoostCalculator.setRichPetBoost(2.0);
         } else {
-            richBoosterTimeRemaining = Formatting.RED + "Rich Booster: N/A";
-            richBoosterRemainingSeconds = 0;
+            SellBoostCalculator.setRichPetBoost(1.0);
         }
+        updateRichBoosterTime();
     }
 
     private static void updateTokensBoosterTime() {
         if (tokensBoosterRemainingSeconds > 0) {
-            timeRemaining = Formatting.AQUA + "Tokens Booster: " + formatTime(tokensBoosterRemainingSeconds); // Prefix for tokens booster
+            timeRemaining = Formatting.AQUA + "Tokens Booster: " + formatTime(tokensBoosterRemainingSeconds);
         } else {
-            timeRemaining = Formatting.RED + "Tokens Booster: N/A";
+            clearTokenBoosterInfo();
         }
     }
 
     private static void updateRichBoosterTime() {
         if (richBoosterRemainingSeconds > 0) {
-            richBoosterTimeRemaining = Formatting.AQUA + "Rich Booster: " + formatTime(richBoosterRemainingSeconds); // Prefix for rich booster
+            richBoosterTimeRemaining = Formatting.AQUA + "Rich Booster: " + formatTime(richBoosterRemainingSeconds);
         } else {
             richBoosterTimeRemaining = Formatting.RED + "Rich Booster: N/A";
         }
     }
 
+    public static void clearTokenBoosterInfo() {
+        timeRemaining = Formatting.RED + "Tokens Booster: N/A";
+    }
+
     public static void clearBoosterInfo() {
-        boosterInfo = Formatting.RED + "Active Booster: ❌";
         sellBoostInfo = Formatting.RED + "Sell Boost: N/A";
         timeRemaining = Formatting.RED + "Tokens Booster: N/A";
         richBoosterTimeRemaining = Formatting.RED + "Rich Booster: N/A";
-        tokensBoosterRemainingSeconds = 0;
-        richBoosterRemainingSeconds = 0;
+        SellBoostCalculator.resetBoosts();
     }
 
     private static String formatTime(int totalSeconds) {
@@ -108,10 +105,10 @@ public class BoosterStatusWindow implements HudRenderCallback {
         if (days > 0) {
             formattedTime.append(days).append("d ");
         }
-        if (hours > 0 || days > 0) {  // Show hours if there are any days or hours
+        if (hours > 0 || days > 0) {
             formattedTime.append(hours).append("h ");
         }
-        if (minutes > 0 || hours > 0 || days > 0) {  // Show minutes if there are any days, hours, or minutes
+        if (minutes > 0 || hours > 0 || days > 0) {
             formattedTime.append(minutes).append("m ");
         }
         formattedTime.append(seconds).append("s");
@@ -126,19 +123,18 @@ public class BoosterStatusWindow implements HudRenderCallback {
         int lineHeight = 15;
 
         int longestTextWidth = Math.max(
-                Math.max(client.textRenderer.getWidth(boosterInfo), client.textRenderer.getWidth(sellBoostInfo)),
-                Math.max(client.textRenderer.getWidth(timeRemaining), client.textRenderer.getWidth(richBoosterTimeRemaining))
+                Math.max(client.textRenderer.getWidth(sellBoostInfo), client.textRenderer.getWidth(timeRemaining)),
+                client.textRenderer.getWidth(richBoosterTimeRemaining)
         );
 
         int windowWidth = longestTextWidth + 2 * padding;
-        int windowHeight = 4 * lineHeight + 2 * padding;
+        int windowHeight = 3 * lineHeight + 2 * padding;
 
         drawContext.fill(windowX, windowY, windowX + windowWidth, windowY + windowHeight, 0x80000000);
 
-        drawContext.drawTextWithShadow(client.textRenderer, Text.of(boosterInfo), windowX + padding, windowY + padding, 0xFFFFFF);
-        drawContext.drawTextWithShadow(client.textRenderer, Text.of(sellBoostInfo), windowX + padding, windowY + padding + lineHeight, 0xFFFFFF);
-        drawContext.drawTextWithShadow(client.textRenderer, Text.of(timeRemaining), windowX + padding, windowY + padding + lineHeight * 2, 0xFFFFFF);
-        drawContext.drawTextWithShadow(client.textRenderer, Text.of(richBoosterTimeRemaining), windowX + padding, windowY + padding + lineHeight * 3, 0xFFFFFF);
+        drawContext.drawTextWithShadow(client.textRenderer, Text.of(sellBoostInfo), windowX + padding, windowY + padding, 0xFFFFFF);
+        drawContext.drawTextWithShadow(client.textRenderer, Text.of(timeRemaining), windowX + padding, windowY + padding + lineHeight, 0xFFFFFF);
+        drawContext.drawTextWithShadow(client.textRenderer, Text.of(richBoosterTimeRemaining), windowX + padding, windowY + padding + lineHeight * 2, 0xFFFFFF);
 
         if (isDragging) {
             double mouseX = client.mouse.getX() / client.getWindow().getScaleFactor();
@@ -146,7 +142,6 @@ public class BoosterStatusWindow implements HudRenderCallback {
             windowX = MathHelper.floor(mouseX - mouseXOffset);
             windowY = MathHelper.floor(mouseY - mouseYOffset);
 
-            // Ensure window stays within screen bounds
             int screenWidth = client.getWindow().getScaledWidth();
             int screenHeight = client.getWindow().getScaledHeight();
 
@@ -168,7 +163,7 @@ public class BoosterStatusWindow implements HudRenderCallback {
     }
 
     public static void handleScreenClose() {
-        isDragging = false; // Ensure dragging stops when screen is closed or changed
+        isDragging = false;
     }
 
     private static int parseTimeToSeconds(String time) {
