@@ -17,14 +17,14 @@ This mod is designed specifically for the **iBlocky Minecraft server** to enhanc
 5. **Install Java 21**: Ensure that you have Java 21 installed. You can download it from [Oracle's official website - Direct Download](https://download.oracle.com/java/21/archive/jdk-21.0.3_windows-x64_bin.exe).
 
 
-## Install Vanilla Minecraft Client
+## Install For Vanilla Minecraft Client
 1. Install Java 21 by double clicking on the `jdk-21.0.3_windows-x64_bin.exe`
 2. **Install Fabric Loader**: Open the application and select **Minecraft version 1.20.6** & **Loader Version 0.16.0**, then click install!
 3. **Add the Mod to Your Mods Folder**: Place the two downloaded mods (Fabric API and this mod) into your Minecraft mods folder(Do Windows key + R and type `%appdata%\.minecraft`). (If the mods folder do not exist, create it)
 4. **Launch Minecraft**: Start the game using the Fabric profile. (Recommend increasing your memory whilst you are there.)
 5. Play
 
-## Install Lunar Client
+## Install For Lunar Client
 1. Open Lunar Client and select versions
 2. Select 1.20, then at the right hand side select addon: `Lunar + Fabric`
 3. Version settings > Mods > drag the iblocky-boosternotification-2.0.0.jar into the application
