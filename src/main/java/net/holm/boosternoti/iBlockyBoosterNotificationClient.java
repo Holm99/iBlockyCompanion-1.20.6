@@ -25,107 +25,89 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class iBlockyBoosterNotificationClient implements ClientModInitializer {
-    private boolean isBoosterActive = false;
-    private boolean isRichBoosterActive = false;
     private static KeyBinding boosterKeyBinding;
+    private static KeyBinding toggleHudKeyBinding;  // Keybinding for toggling HUD visibility
     private String lastKnownPrefix = null;
+    private static BoosterConfig config;
+    private BoosterStatusWindow boosterStatusWindow;
+    private boolean isHudVisible = true;  // HUD visibility state
 
-    private static final Pattern BOOSTER_PATTERN = Pattern.compile("\\s-\\sTokens\\s\\((\\d+(\\.\\d+)?)x\\)\\s\\((\\d+d\\s)?(\\d+h\\s)?(\\d+m\\s)?(\\d+s\\s)?remaining\\)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern TOKEN_BOOSTER_PATTERN = Pattern.compile("\\s-\\sTokens\\s\\((\\d+(\\.\\d+)?)x\\)\\s\\((\\d+d\\s)?(\\d+h\\s)?(\\d+m\\s)?(\\d+s\\s)?remaining\\)", Pattern.CASE_INSENSITIVE);
     private static final Pattern RICH_BOOSTER_PATTERN = Pattern.compile("iBlocky → Your Rich pet has rewarded you with a 2x sell booster for the next (\\d+d\\s)?(\\d+h\\s)?(\\d+m\\s)?(\\d+s)?!");
 
     private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
     @Override
     public void onInitializeClient() {
-        HudRenderCallback.EVENT.register(new BoosterStatusWindow());
+        config = BoosterConfig.load();  // Load once during initialization
+        boosterStatusWindow = new BoosterStatusWindow(config); // Initialize the instance
+        HudRenderCallback.EVENT.register(boosterStatusWindow);
+
+        // Initialize other events, listeners, etc.
         registerMessageListeners();
         registerMouseEvents();
         registerLogoutEvent();
         registerKeyBindings();
-        registerKeyPressEvent();
         registerJoinEvent();
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (MinecraftClient.getInstance().currentScreen == null) {
-                BoosterStatusWindow.handleScreenClose();
+                boosterStatusWindow.handleScreenClose(); // Use instance method
             }
         });
     }
 
-    // Register event when player joins the server
     private void registerJoinEvent() {
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
-            System.out.println("[DEBUG] Player joined the server. Starting to fetch display name.");
+            // Load config and start fetching after joining
+            if (config == null) {
+                config = BoosterConfig.load();
+            }
+
+            // Start fetching display name after joining
             startFetchingDisplayName();
+
+            // Ensure HUD visibility matches user setting
+            boosterStatusWindow.setHudVisible(isHudVisible);
         });
     }
 
     // Method to start fetching the display name with a fixed rate
     private void startFetchingDisplayName() {
-        scheduler.scheduleAtFixedRate(this::fetchAndLogPlayerPrefix, 2, 5, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(this::fetchAndLogPlayerPrefix, config.initialFetchDelaySeconds, config.fetchIntervalSeconds, TimeUnit.SECONDS);
     }
 
     private void fetchAndLogPlayerPrefix() {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.player != null) {
-            System.out.println("Player is initialized.");
-
             // Get the player's UUID and GameProfile
             GameProfile playerProfile = client.player.getGameProfile();
 
-            if (client.getNetworkHandler() == null) {
-                System.out.println("Network handler is not available. Cannot fetch player prefix.");
+            if (client.getNetworkHandler() == null || client.getNetworkHandler().getPlayerList().isEmpty()) {
                 return;
             }
-
-            if (client.getNetworkHandler().getPlayerList().isEmpty()) {
-                System.out.println("Player list is empty, waiting for synchronization...");
-                return;
-            }
-
-            System.out.println("Fetching player list entries.");
 
             for (PlayerListEntry entry : Objects.requireNonNull(client.getNetworkHandler()).getPlayerList()) {
-                System.out.println("Checking entry for player UUID: " + entry.getProfile().getId());
-
                 if (entry.getProfile().getId().equals(playerProfile.getId())) {
-                    Text displayName = entry.getDisplayName();
-                    String listName = entry.getProfile().getName(); // Default name without any prefix
-
-                    System.out.println("Matched player UUID. Display name is: " + (displayName != null ? displayName.getString() : "null"));
-                    System.out.println("List name (default name): " + listName);
-
                     // Check if there is any team prefix (some servers use teams to set prefixes)
                     if (entry.getScoreboardTeam() != null) {
-                        String teamName = entry.getScoreboardTeam().getName();
-                        String teamPrefix = entry.getScoreboardTeam().getPrefix().getString();
-
-                        System.out.println("Player is in team: " + teamName);
-                        System.out.println("Team prefix: " + teamPrefix);
+                        String teamPrefix = entry.getScoreboardTeam().getPrefix().getString().trim();  // Trim to remove any surrounding whitespace
 
                         // Update only if there is a change in the prefix
                         if (!teamPrefix.equals(lastKnownPrefix)) {
                             lastKnownPrefix = teamPrefix;
-                            System.out.println("Updated Team Prefix: " + teamPrefix);
-                            // Assuming SellBoostCalculator has a method to update rank based on team prefix
                             SellBoostCalculator.setRank(teamPrefix);
                         }
                     } else {
-                        System.out.println("Player is not in any team.");
                         // Handle cases where the player is not in any team
                         if (lastKnownPrefix != null) {
                             lastKnownPrefix = null;
-                            System.out.println("Player Name (no prefix): " + listName);
                         }
                     }
-
-                    // Additional logic if needed, e.g., further calculations or updates
 
                     break; // Exit the loop once we find our player
                 }
             }
-        } else {
-            System.out.println("Player is not initialized yet.");
         }
     }
 
@@ -145,12 +127,12 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
         });
     }
 
-    private void processChatMessage(String msg, boolean isGameMessage) {
+    private void processChatMessage(String msg, boolean ignoredIsGameMessage) {
         if (msg.contains("Backpack Space")) {
             return;
         }
 
-        Matcher matcher = BOOSTER_PATTERN.matcher(msg);
+        Matcher matcher = TOKEN_BOOSTER_PATTERN.matcher(msg);
         if (matcher.find()) {
             String multiplier = matcher.group(1);
             StringBuilder remaining = new StringBuilder();
@@ -163,9 +145,7 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
                 multiplier = multiplier.trim();
                 remaining = new StringBuilder(remaining.toString().replace("remaining", "").trim());
 
-                BoosterStatusWindow.setTokensBoosterActive(true, multiplier, remaining.toString());
-
-                isBoosterActive = true;
+                boosterStatusWindow.setTokensBoosterActive(true, multiplier, remaining.toString());
             }
         }
 
@@ -180,9 +160,7 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
             if (!remaining.isEmpty()) {
                 remaining = new StringBuilder(remaining.toString().trim());
 
-                BoosterStatusWindow.setRichBoosterActive(true, remaining.toString());
-
-                isRichBoosterActive = true;
+                boosterStatusWindow.setRichBoosterActive(true, remaining.toString());
             }
         }
     }
@@ -194,20 +172,16 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
                 double mouseY = client.mouse.getY() / client.getWindow().getScaleFactor();
 
                 if (GLFW.glfwGetMouseButton(client.getWindow().getHandle(), GLFW.GLFW_MOUSE_BUTTON_1) == GLFW.GLFW_PRESS) {
-                    BoosterStatusWindow.handleMousePress(mouseX, mouseY);
+                    boosterStatusWindow.handleMousePress(mouseX, mouseY); // Use instance method
                 } else {
-                    BoosterStatusWindow.handleMouseRelease();
+                    boosterStatusWindow.handleMouseRelease(); // Use instance method
                 }
             }
         });
     }
 
     private void registerLogoutEvent() {
-        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
-            BoosterStatusWindow.clearBoosterInfo();
-            isBoosterActive = false;
-            isRichBoosterActive = false;
-        });
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> boosterStatusWindow.clearBoosterInfo());
     }
 
     private void registerKeyBindings() {
@@ -218,45 +192,36 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
                 "category.boosternoti.general"
         );
 
+        toggleHudKeyBinding = new KeyBinding(  // Keybinding for toggling HUD visibility
+                "key.boosternoti.toggleHud",
+                InputUtil.Type.KEYSYM,
+                GLFW.GLFW_KEY_H,
+                "category.boosternoti.general"
+        );
+
         KeyBindingHelper.registerKeyBinding(boosterKeyBinding);
+        KeyBindingHelper.registerKeyBinding(toggleHudKeyBinding);
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (boosterKeyBinding.wasPressed()) {
                 sendBoosterCommand();
+                fetchAndLogPlayerPrefix();
+            }
+
+            if (toggleHudKeyBinding.wasPressed()) {
+                toggleHudVisibility();  // Call toggle method when key is pressed
             }
         });
     }
 
-    private void registerKeyPressEvent() {
-        ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            if (boosterKeyBinding.wasPressed()) {
-                sendBoosterCommand();
-            }
-        });
+    private void toggleHudVisibility() {
+        isHudVisible = !isHudVisible;  // Toggle the visibility state
+        boosterStatusWindow.setHudVisible(isHudVisible);
     }
 
     private void sendBoosterCommand() {
         if (MinecraftClient.getInstance().player != null) {
             MinecraftClient.getInstance().player.networkHandler.sendChatCommand("booster");
         }
-    }
-
-    private int parseTimeToSeconds(String time) {
-        int totalSeconds = 0;
-
-        String[] parts = time.split(" ");
-        for (String part : parts) {
-            if (part.endsWith("d")) {
-                totalSeconds += Integer.parseInt(part.replace("d", "")) * 86400;
-            } else if (part.endsWith("h")) {
-                totalSeconds += Integer.parseInt(part.replace("h", "")) * 3600;
-            } else if (part.endsWith("m")) {
-                totalSeconds += Integer.parseInt(part.replace("m", "")) * 60;
-            } else if (part.endsWith("s")) {
-                totalSeconds += Integer.parseInt(part.replace("s", ""));
-            }
-        }
-
-        return totalSeconds;
     }
 }

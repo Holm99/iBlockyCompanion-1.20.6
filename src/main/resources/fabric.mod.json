@@ -1,17 +1,16 @@
 {
 	"schemaVersion": 1,
-	"id": "iblocky-boosternotification",
+	"id": "iblocky_boosternotifi",
 	"version": "${version}",
-	"name": "iBlocky-BoosterNotification",
-	"description": "This mod is for iBlocky server only, it will display your active booster",
+	"name": "iBlocky Booster Notification Mod",
+	"description": "A mod to display booster notifications on the iBlocky server.",
 	"authors": [
 		"Holm"
 	],
 	"contact": {
-		"homepage": "https://github.com/Holm99/iblocky-boosternotification-1.20.6",
 		"sources": "https://github.com/Holm99/iblocky-boosternotification-1.20.6"
 	},
-	"license": "CC0-1.0",
+	"license": "MIT",
 	"environment": "*",
 	"entrypoints": {
 		"main": [
@@ -21,11 +20,9 @@
 			"net.holm.boosternoti.iBlockyBoosterNotificationClient"
 		]
 	},
-	"mixins": [
-		"iblocky-boosternotification.mixins.json"
-	],
+	"mixins": [],
 	"depends": {
-		"fabricloader": ">=0.16.3",
+		"fabricloader": ">=0.16.0",
 		"minecraft": "~1.20.6",
 		"java": ">=21",
 		"fabric-api": "*"
