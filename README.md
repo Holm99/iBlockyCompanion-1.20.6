@@ -6,18 +6,28 @@ This mod is designed specifically for the **iBlocky Minecraft server** to enhanc
 
 ![image](https://github.com/user-attachments/assets/c170541f-478b-441c-aad2-097b6a7c6717)![image](https://github.com/user-attachments/assets/14803cc8-58a3-4f8c-ab4d-5056c0e10958)
 
+**[Vanilla Client - YouTube Tutorial](https://youtu.be/UYzXPUDZ3gw?si=zAk-UiDwzFPrTRGY)**
+**[Lunar Client - YouTube Tutorial](https://youtu.be/UYzXPUDZ3gw?si=zAk-UiDwzFPrTRGY)**
 
-## Installation
-
-Following the YouTube tutorial is probably easier 🙂
-**[YouTube Tutorial](https://youtu.be/UYzXPUDZ3gw?si=zAk-UiDwzFPrTRGY)**
+## Download
 1. **Download the Mod**: Grab the latest release from the [Releases](https://github.com/Holm99/iblocky-boosternotification-1.20.6/releases) page.
-2. **Download Fabric Loader**: Download **Fabric Loader** from [Fabric's official website - Direct Download]([https://fabricmc.net/use/](https://maven.fabricmc.net/net/fabricmc/fabric-installer/1.0.1/fabric-installer-1.0.1.exe).
-3. **Install Fabric Loader**: Open the application and select **Minecraft version 1.20.6** & **Loader Version 0.16.0**, then click install!
-4. **Install Fabric API**: This mod requires **Fabric API version 0.100.8+1.20.6**. [CurseForge - Direct Download](https://mediafilez.forgecdn.net/files/5577/501/fabric-api-0.100.8%2B1.20.6.jar).
+2. **Download Fabric Loader**: Only needed for vanilla client. Download **Fabric Loader** from [Fabric's official website - Direct Download](https://maven.fabricmc.net/net/fabricmc/fabric-installer/1.0.1/fabric-installer-1.0.1.exe).
+4. **Install Fabric API**: Only needed for vanilla client. This mod requires **Fabric API version 0.100.8+1.20.6**. [CurseForge - Direct Download](https://mediafilez.forgecdn.net/files/5577/501/fabric-api-0.100.8%2B1.20.6.jar).
 5. **Install Java 21**: Ensure that you have Java 21 installed. You can download it from [Oracle's official website - Direct Download](https://download.oracle.com/java/21/archive/jdk-21.0.3_windows-x64_bin.exe).
-6. **Add the Mod to Your Mods Folder**: Place the two downloaded mods (Fabric API and this mod) into your (Do Windows key + R and type `%appdata%\.minecraft`) `C:\Users\yourusernamehere\AppData\Roaming\.minecraft\mods` folder. (If the mods folder does not exist, just create it)
-7. **Launch Minecraft**: Start the game using the Fabric profile.
+
+
+## Install Vanilla Minecraft Client
+1. Install Java 21 by double clicking on the `jdk-21.0.3_windows-x64_bin.exe`
+2. **Install Fabric Loader**: Open the application and select **Minecraft version 1.20.6** & **Loader Version 0.16.0**, then click install!
+3. **Add the Mod to Your Mods Folder**: Place the two downloaded mods (Fabric API and this mod) into your Minecraft mods folder(Do Windows key + R and type `%appdata%\.minecraft`). (If the mods folder do not exist, create it)
+4. **Launch Minecraft**: Start the game using the Fabric profile. (Recommend increasing your memory whilst you are there.)
+5. Play
+
+## Install Lunar Client
+1. Open Lunar Client and select versions
+2. Select 1.20, then at the right hand side select addon: `Lunar + Fabric`
+3. Version settings > Mods > drag the iblocky-boosternotification-2.0.0.jar into the application
+4. Play
 
 ## Compatibility
 
