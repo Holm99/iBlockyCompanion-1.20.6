@@ -12,7 +12,7 @@ Following the YouTube tutorial is probably easier :)
 **[Youtube tutorial](https://youtu.be/UYzXPUDZ3gw?si=zAk-UiDwzFPrTRGY)**
 1. **Download the Mod**: Grab the latest release from the [Releases](https://github.com/Holm99/iblocky-boosternotification-1.20.6/releases) page.
 2. **Download Fabric Loader**: Download **Fabric Loader** from [Fabric's official website](https://fabricmc.net/use/).
-3. **Install Fabric Loader**: Open the application and Select **Minecraft version 1.20.6** & **Loader Version 0.16.3** then click install!
+3. **Install Fabric Loader**: Open the application and Select **Minecraft version 1.20.6** & **Loader Version 0.16.0** then click install!
 4. **Install Fabric API**: This mod requires **Fabric API version 0.100.8+1.20.6**. So open the link but DO NOT click the download button on the top right, select **Fabric API version 0.100.8+1.20.6** below, (Three dots and download file). Download it from [CurseForge](https://www.curseforge.com/minecraft/mc-mods/fabric-api/files/all?page=1&pageSize=20&version=1.20.6&gameVersionTypeId=4).
 5. **Install Java 21**: Ensure that you have Java 21 installed. You can download it from [Oracle's official website](https://www.oracle.com/java/technologies/javase/jdk21-archive-downloads.html).
 6. **Add the Mod to Your Mods Folder**: Place the two downloaded mods (Fabric API and my mod) into your (Do Windows key + R    and type `%appdata%\.minecraft`) `C:\Users\yourusernamehere\AppData\Roaming\.minecraft\mods` folder. (If the mods folder do not exist just create it)
