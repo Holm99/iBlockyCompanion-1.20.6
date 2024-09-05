@@ -22,7 +22,7 @@ Following the YouTube tutorial is probably easier :)
 ## Compatibility
 
 - **Minecraft Version**: **1.20.6**
-- **Fabric Loader Version**: **0.16.3**
+- **Fabric Loader Version**: **0.16.0**
 - **Fabric API Version**: **0.100.8+1.20.6**
 - **Java Version**: **21**
 
