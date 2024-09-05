@@ -7,6 +7,7 @@ This mod is designed specifically for the **iBlocky Minecraft server** to enhanc
 ![image](https://github.com/user-attachments/assets/c170541f-478b-441c-aad2-097b6a7c6717)![image](https://github.com/user-attachments/assets/14803cc8-58a3-4f8c-ab4d-5056c0e10958)
 
 **[Vanilla Client - YouTube Tutorial](https://youtu.be/UYzXPUDZ3gw?si=zAk-UiDwzFPrTRGY)**
+
 **[Lunar Client - YouTube Tutorial](https://youtu.be/UYzXPUDZ3gw?si=zAk-UiDwzFPrTRGY)**
 
 ## Download
