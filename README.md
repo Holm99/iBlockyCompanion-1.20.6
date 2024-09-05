@@ -12,10 +12,10 @@ This mod is designed specifically for the **iBlocky Minecraft server** to enhanc
 Following the YouTube tutorial is probably easier 🙂
 **[YouTube Tutorial](https://youtu.be/UYzXPUDZ3gw?si=zAk-UiDwzFPrTRGY)**
 1. **Download the Mod**: Grab the latest release from the [Releases](https://github.com/Holm99/iblocky-boosternotification-1.20.6/releases) page.
-2. **Download Fabric Loader**: Download **Fabric Loader** from [Fabric's official website](https://fabricmc.net/use/).
+2. **Download Fabric Loader**: Download **Fabric Loader** from [Fabric's official website - Direct Download]([https://fabricmc.net/use/](https://maven.fabricmc.net/net/fabricmc/fabric-installer/1.0.1/fabric-installer-1.0.1.exe)).
 3. **Install Fabric Loader**: Open the application and select **Minecraft version 1.20.6** & **Loader Version 0.16.0**, then click install!
-4. **Install Fabric API**: This mod requires **Fabric API version 0.100.8+1.20.6**. Open the link but DO NOT click the download button on the top right; select **Fabric API version 0.100.8+1.20.6** below (three dots and download file). Download it from [CurseForge](https://www.curseforge.com/minecraft/mc-mods/fabric-api/files/all?page=1&pageSize=20&version=1.20.6&gameVersionTypeId=4).
-5. **Install Java 21**: Ensure that you have Java 21 installed. You can download it from [Oracle's official website](https://www.oracle.com/java/technologies/javase/jdk21-archive-downloads.html).
+4. **Install Fabric API**: This mod requires **Fabric API version 0.100.8+1.20.6**. [CurseForge - Direct Download]([https://mediafilez.forgecdn.net/files/5577/501/fabric-api-0.100.8%2B1.20.6.jar]).
+5. **Install Java 21**: Ensure that you have Java 21 installed. You can download it from [Oracle's official website - Direct Download](https://download.oracle.com/java/21/archive/jdk-21.0.3_windows-x64_bin.exe).
 6. **Add the Mod to Your Mods Folder**: Place the two downloaded mods (Fabric API and this mod) into your (Do Windows key + R and type `%appdata%\.minecraft`) `C:\Users\yourusernamehere\AppData\Roaming\.minecraft\mods` folder. (If the mods folder does not exist, just create it)
 7. **Launch Minecraft**: Start the game using the Fabric profile.
 
