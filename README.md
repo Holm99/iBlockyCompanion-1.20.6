@@ -50,7 +50,6 @@ The configuration file allows you to set various options:
 
 - **HUD Position**: Configure the X and Y coordinates of the HUD elements.
 - **Fetch Interval**: Set how often the mod fetches rank information.
-- **Logging Level**: Adjust the logging level to control what gets logged in `iBlockynotify.log`.
 
 ## Development
 
