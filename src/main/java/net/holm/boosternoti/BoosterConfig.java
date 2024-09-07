@@ -39,8 +39,8 @@ public class BoosterConfig {
                 JsonObject config = JsonParser.parseReader(reader).getAsJsonObject();
                 instance = GSON.fromJson(config, BoosterConfig.class);
                 return instance;
-            } catch (IOException | JsonSyntaxException e) {
-                LOGGER.error("Failed to load config file: {}", e.getMessage(), e);
+            } catch (JsonSyntaxException | IOException e) {
+                LOGGER.error("Failed to load config, creating default config. Error: {}", e.getMessage(), e);
             }
         }
 

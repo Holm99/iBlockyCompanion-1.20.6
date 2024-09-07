@@ -44,6 +44,7 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
         HudRenderCallback.EVENT.register(boosterStatusWindow);
 
         // Initialize other events, listeners, etc.
+        BackpackSpaceTracker.init();
         registerMessageListeners();
         registerMouseEvents();
         registerLogoutEvent();
@@ -114,23 +115,17 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
     private void registerMessageListeners() {
         ClientReceiveMessageEvents.CHAT.register((Text message, SignedMessage signedMessage, GameProfile sender, MessageType.Parameters params, Instant receptionTimestamp) -> {
             String msg = message.getString();
-            if (!msg.contains("Backpack Space")) {
-                processChatMessage(msg, false);
-            }
+            processChatMessage(msg, false);
         });
 
         ClientReceiveMessageEvents.GAME.register((Text message, boolean overlay) -> {
             String msg = message.getString();
-            if (!msg.contains("Backpack Space")) {
-                processChatMessage(msg, true);
-            }
+            processChatMessage(msg, true);
         });
     }
 
+
     private void processChatMessage(String msg, boolean ignoredIsGameMessage) {
-        if (msg.contains("Backpack Space")) {
-            return;
-        }
 
         Matcher matcher = TOKEN_BOOSTER_PATTERN.matcher(msg);
         if (matcher.find()) {

@@ -39,6 +39,7 @@ public class BoosterStatusWindow implements HudRenderCallback {
     private static String sellBoostInfo = Formatting.RED + "Sell Boost: N/A";
     private String timeRemaining = Formatting.RED + "Tokens Booster: N/A";
     private String richBoosterTimeRemaining = Formatting.RED + "Rich Booster: N/A";
+    private String backpackTimeInfo = Formatting.RED + "Backpack Time: N/A"; // New variable to store backpack time info
 
     private int tokensBoosterRemainingSeconds = 0;
     private int richBoosterRemainingSeconds = 0;
@@ -74,6 +75,16 @@ public class BoosterStatusWindow implements HudRenderCallback {
                 showInstructions = !showInstructions;  // Toggle instructions visibility
                 needsRenderUpdate = true; // Trigger a render update
             }
+        });
+        startBackpackTimeTracking();
+    }
+
+    private void startBackpackTimeTracking() {
+        // Register a tick event to regularly update the backpack time display
+        ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            // Get the current elapsed time from BackpackSpaceTracker
+            backpackTimeInfo = Formatting.AQUA + "Backpack Time: " + BackpackSpaceTracker.getElapsedTime();
+            needsRenderUpdate = true; // Trigger render update
         });
     }
 
@@ -245,7 +256,7 @@ public class BoosterStatusWindow implements HudRenderCallback {
         // Calculate the maximum text width dynamically based on all HUD elements, including instructions if visible
         int maxTextWidth = Math.max(
                 Math.max(client.textRenderer.getWidth(sellBoostInfo), client.textRenderer.getWidth(timeRemaining)),
-                client.textRenderer.getWidth(richBoosterTimeRemaining)
+                Math.max(client.textRenderer.getWidth(richBoosterTimeRemaining), client.textRenderer.getWidth(backpackTimeInfo)) // Include backpack time info
         );
 
         if (showInstructions) {
@@ -256,8 +267,8 @@ public class BoosterStatusWindow implements HudRenderCallback {
             maxTextWidth = Math.max(maxTextWidth, instructionsWidth);
         }
 
-        // Calculate the number of lines to display, including instructions if visible
-        int lineCount = 3; // Number of booster lines
+        // Calculate the number of lines to display, including backpack info and instructions
+        int lineCount = 4; // 3 lines for boosters + 1 for backpack time
         if (showInstructions) {
             lineCount += 5; // Adding 5 lines for instructions (3 lines for actual text + 2 lines for separators)
         }
@@ -271,13 +282,21 @@ public class BoosterStatusWindow implements HudRenderCallback {
         drawContext.fill(windowX, windowY, windowX + windowWidth, windowY + windowHeight, 0x80000000);
 
         // Draw the booster information
-        drawContext.drawTextWithShadow(client.textRenderer, Text.of(sellBoostInfo), windowX + padding, windowY + padding, 0xFFFFFF);
-        drawContext.drawTextWithShadow(client.textRenderer, Text.of(timeRemaining), windowX + padding, windowY + padding + lineHeight, 0xFFFFFF);
-        drawContext.drawTextWithShadow(client.textRenderer, Text.of(richBoosterTimeRemaining), windowX + padding, windowY + padding + lineHeight * 2, 0xFFFFFF);
+        int currentY = windowY + padding; // Initialize the current Y position for the text
+        drawContext.drawTextWithShadow(client.textRenderer, Text.of(sellBoostInfo), windowX + padding, currentY, 0xFFFFFF);
+        currentY += lineHeight; // Move to the next line
+
+        drawContext.drawTextWithShadow(client.textRenderer, Text.of(timeRemaining), windowX + padding, currentY, 0xFFFFFF);
+        currentY += lineHeight;
+
+        drawContext.drawTextWithShadow(client.textRenderer, Text.of(richBoosterTimeRemaining), windowX + padding, currentY, 0xFFFFFF);
+        currentY += lineHeight;
+
+        drawContext.drawTextWithShadow(client.textRenderer, Text.of(backpackTimeInfo), windowX + padding, currentY, 0xFFFFFF); // Draw backpack info
+        currentY += lineHeight;
 
         // Draw the instructions if visible
         if (showInstructions) {
-            int currentY = windowY + padding + lineHeight * 3;
             drawContext.drawTextWithShadow(client.textRenderer, Text.of("----------------------"), windowX + padding, currentY, 0xFFFFFF);
             currentY += lineHeight;
             drawContext.drawTextWithShadow(client.textRenderer, Text.of("B - Run Booster Command"), windowX + padding, currentY, 0xFFFFFF);
