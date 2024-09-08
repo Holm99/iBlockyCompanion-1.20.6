@@ -10,53 +10,54 @@ public class SellBoostCalculator {
     private static double totalSellBoost = 1.0;  // Initial total boost, with base multiplier included
 
     private static final Map<String, Double> rankBoostMap = new HashMap<>();
+    private static final Map<String, String> aliasMap = new HashMap<>();  // Alias mapping
 
     static {
         // Rank multipliers as doubles for accurate calculations
-        //noinspection SpellCheckingInspection
         rankBoostMap.put("ᴘʀɪꜱᴏɴᴇʀ", 1.00);
-        //noinspection SpellCheckingInspection
         rankBoostMap.put("ᴅᴇᴀʟᴇʀ", 1.05);
-        //noinspection SpellCheckingInspection
         rankBoostMap.put("ᴄʀɪᴍɪɴᴀʟ", 1.10);
-        //noinspection SpellCheckingInspection
         rankBoostMap.put("ʜɪᴛᴍᴀɴ", 1.15);
-        //noinspection SpellCheckingInspection
         rankBoostMap.put("ᴛʜᴜɢ", 1.20);
-        //noinspection SpellCheckingInspection
         rankBoostMap.put("ɢᴀɴɢꜱᴛᴇʀ", 1.30);
-        //noinspection SpellCheckingInspection
         rankBoostMap.put("ᴋɪɴɢᴘɪɴ", 1.50);
-        //noinspection SpellCheckingInspection
         rankBoostMap.put("ɪʙʟᴏᴄᴋʏ", 1.70);
         rankBoostMap.put("THE 1%", 2.00);
+
+        // Alias map: plain text rank -> formatted rank
+        aliasMap.put("prisoner", "ᴘʀɪꜱᴏɴᴇʀ");
+        aliasMap.put("dealer", "ᴅᴇᴀʟᴇʀ");
+        aliasMap.put("criminal", "ᴄʀɪᴍɪɴᴀʟ");
+        aliasMap.put("hitman", "ʜɪᴛᴍᴀɴ");
+        aliasMap.put("thug", "ᴛʜᴜɢ");
+        aliasMap.put("gangster", "ɢᴀɴɢꜱᴛᴇʀ");
+        aliasMap.put("kingpin", "ᴋɪɴɢᴘɪɴ");
+        aliasMap.put("iblocky", "ɪʙʟᴏᴄᴋʏ");
+        aliasMap.put("the 1%", "THE 1%");
     }
 
     public static void setRank(String rank) {
-        // Check if the rank exists in the rankBoostMap
-        // If found, set the rankBoost to the corresponding multiplier
-        // If not found, handle the missing rank case without assigning a default
-        // Reset to base multiplier
-        rankBoost = rankBoostMap.getOrDefault(rank, 1.0);
+        // First, check if the input rank is an alias
+        String formattedRank = aliasMap.getOrDefault(rank.toLowerCase(), rank);
+
+        // Then, check if the formatted rank exists in the rankBoostMap
+        rankBoost = rankBoostMap.getOrDefault(formattedRank, 1.0);
         updateSellBoost();
     }
 
     public static void setTokenBoost(double multiplier) {
-        // Update tokenBoost based on the new multiplier
         tokenBoost = multiplier;
         updateSellBoost();
     }
 
     public static void setRichPetBoost(double multiplier) {
-        // Update richPetBoost based on the new multiplier
         richPetBoost = multiplier;
         updateSellBoost();
     }
 
     static void updateSellBoost() {
-        // Calculate the total sell boost as the sum of all active boosts
-        totalSellBoost = rankBoost + tokenBoost + richPetBoost; // Corrected formula to simply sum all multipliers
-        BoosterStatusWindow.updateSellBoostDisplay(totalSellBoost); // No error now, because it's static
+        totalSellBoost = rankBoost + tokenBoost + richPetBoost;
+        BoosterStatusWindow.updateSellBoostDisplay(totalSellBoost);
     }
 
     public static void resetBoosts() {
@@ -73,8 +74,15 @@ public class SellBoostCalculator {
         return richPetBoost;
     }
 
-    // Add the missing method to get the total sell boost
     public static double getTotalSellBoost() {
         return totalSellBoost;
+    }
+
+    public static Map<String, Double> getRankBoostMap() {
+        return rankBoostMap;
+    }
+
+    public static Map<String, String> getAliasMap() {
+        return aliasMap;
     }
 }

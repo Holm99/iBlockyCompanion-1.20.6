@@ -19,6 +19,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import static net.holm.boosternoti.iBlockyBoosterNotificationClient.setHudVisible;
+
 public class BoosterStatusWindow implements HudRenderCallback {
     private static final int BANNER_HEIGHT = 20; // Height of the banner at the top
     private boolean hudVisible = true;  // Instance field to manage visibility
@@ -42,6 +44,8 @@ public class BoosterStatusWindow implements HudRenderCallback {
 
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private ScheduledFuture<?> countdownTask;
+
+    private long lastLogTime = 0; // For logging control
 
     private final BoosterConfig config;
 
@@ -73,14 +77,10 @@ public class BoosterStatusWindow implements HudRenderCallback {
         startBackpackTimeTracking();
     }
 
-    // Method to toggle the visibility of the HUD
-    public void setHudVisible(boolean visible) {
-        this.hudVisible = visible;
-        needsRenderUpdate = true;  // Trigger render update
-    }
-
     private void startBackpackTimeTracking() {
+        // Register a tick event to regularly update the backpack time display
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            // Get the current elapsed time from BackpackSpaceTracker
             backpackTimeInfo = Formatting.AQUA + "Backpack Time: " + BackpackSpaceTracker.getElapsedTime();
             needsRenderUpdate = true; // Trigger render update
         });

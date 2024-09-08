@@ -1,6 +1,7 @@
 package net.holm.boosternoti;
 
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
@@ -18,6 +19,7 @@ import org.lwjgl.glfw.GLFW;
 
 import java.time.Instant;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -29,7 +31,7 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
     private static KeyBinding toggleHudKeyBinding;
     private String lastKnownPrefix = null;
     private static BoosterConfig config;
-    private static BoosterStatusWindow boosterStatusWindow;
+    private BoosterStatusWindow boosterStatusWindow;
     private static boolean isHudVisible = true;
 
     private static final Pattern TOKEN_BOOSTER_PATTERN = Pattern.compile("\\s-\\sTokens\\s\\((\\d+(\\.\\d+)?)x\\)\\s\\((\\d+d\\s)?(\\d+h\\s)?(\\d+m\\s)?(\\d+s\\s)?remaining\\)", Pattern.CASE_INSENSITIVE);
@@ -37,8 +39,12 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
 
     private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
+    // Instance of the client to allow calling non-static methods
+    private static iBlockyBoosterNotificationClient instance;
+
     @Override
     public void onInitializeClient() {
+        instance = this;  // Assign this instance
         config = BoosterConfig.load();
         boosterStatusWindow = new BoosterStatusWindow(config);
         HudRenderCallback.EVENT.register(boosterStatusWindow);
@@ -49,6 +55,11 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
         registerLogoutEvent();
         registerKeyBindings();
         registerJoinEvent();
+
+        // Register the rankset command using ClientCommandRegistrationCallback
+        ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
+            RankSetCommand.register(dispatcher);
+        });
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (MinecraftClient.getInstance().currentScreen == null) {
@@ -63,38 +74,70 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
                 config = BoosterConfig.load();
             }
             startFetchingDisplayName();
-            boosterStatusWindow.setHudVisible(isHudVisible); // Ensure HUD reflects the new visibility state
+            setHudVisible(isHudVisible);
         });
     }
 
-    private void startFetchingDisplayName() {
+    // Non-static method to start fetching the display name periodically
+    void startFetchingDisplayName() {
         scheduler.scheduleAtFixedRate(this::fetchAndLogPlayerPrefix, config.initialFetchDelaySeconds, config.fetchIntervalSeconds, TimeUnit.SECONDS);
     }
 
-    private void fetchAndLogPlayerPrefix() {
+    public static iBlockyBoosterNotificationClient getInstance() {
+        return instance;  // Add a method to get the instance
+    }
+
+    void fetchAndLogPlayerPrefix() {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.player != null) {
             GameProfile playerProfile = client.player.getGameProfile();
+            UUID playerUUID = playerProfile.getId();
 
-            if (client.getNetworkHandler() == null || client.getNetworkHandler().getPlayerList().isEmpty()) {
-                return;
+            BoosterConfig config = BoosterConfig.load();
+            String manualRank = config.getManualRank(playerUUID);
+
+            // Log the start of the method
+            System.out.println("Starting fetchAndLogPlayerPrefix for player: " + playerUUID);
+
+            // Check if a manual rank is set
+            if (manualRank != null) {
+                System.out.println("Manual rank found for player: " + manualRank);
+                SellBoostCalculator.setRank(manualRank);  // Use manually set rank
+                return;  // Exit early if manual rank is set
+            } else {
+                System.out.println("No manual rank found for player. Fetching rank from server.");
             }
 
+            // Fetch and apply the rank from the server if no manual rank is set
+            if (client.getNetworkHandler() == null || client.getNetworkHandler().getPlayerList().isEmpty()) {
+                System.out.println("Network handler is unavailable or player list is empty.");
+                return;  // Exit if network handler is not available
+            }
+
+            // Force rank update after manual clear
+            lastKnownPrefix = null; // Reset the last known prefix to ensure rank is updated
+
+            // Iterate through the player list to fetch the prefix
             for (PlayerListEntry entry : Objects.requireNonNull(client.getNetworkHandler()).getPlayerList()) {
                 if (entry.getProfile().getId().equals(playerProfile.getId())) {
                     if (entry.getScoreboardTeam() != null) {
                         String teamPrefix = entry.getScoreboardTeam().getPrefix().getString().trim();
 
-                        if (!teamPrefix.equals(lastKnownPrefix)) {
-                            lastKnownPrefix = teamPrefix;
-                            SellBoostCalculator.setRank(teamPrefix);
-                        }
+                        // Log the fetched team prefix
+                        System.out.println("Fetched team prefix: " + teamPrefix);
+
+                        // Update regardless of whether the teamPrefix has changed
+                        System.out.println("Updating rank to: " + teamPrefix);
+                        SellBoostCalculator.setRank(teamPrefix);  // Apply the server rank boost here
                     } else if (lastKnownPrefix != null) {
-                        lastKnownPrefix = null;
+                        lastKnownPrefix = null; // Reset the prefix if none is found
+                        System.out.println("No team prefix found, resetting the prefix.");
                     }
-                    break;
+                    break;  // Exit the loop once the rank is found
                 }
             }
+        } else {
+            System.out.println("Player or client is null, skipping rank fetching.");
         }
     }
 
@@ -177,12 +220,23 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
 
     public static void toggleHudVisibility(boolean visible) {
         isHudVisible = visible;
-        boosterStatusWindow.setHudVisible(isHudVisible); // Ensure HUD reflects the new visibility state
+        setHudVisible(isHudVisible); // Ensure HUD reflects the new visibility state
+    }
+
+    public static void setHudVisible(boolean visible) {
+        isHudVisible = visible;
     }
 
     private void sendBoosterCommand() {
         if (MinecraftClient.getInstance().player != null) {
             MinecraftClient.getInstance().player.networkHandler.sendChatCommand("booster");
+        }
+    }
+
+    // Public method to access the instance and call the non-static method
+    public static void startFetchingDisplayNameFromInstance() {
+        if (instance != null) {
+            instance.startFetchingDisplayName();
         }
     }
 }

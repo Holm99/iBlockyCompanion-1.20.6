@@ -13,6 +13,9 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 public class BoosterConfig {
 
@@ -24,6 +27,8 @@ public class BoosterConfig {
     public int windowY = 100; // Default Y position
     public int initialFetchDelaySeconds = 30; // Default fetch delay
     public int fetchIntervalSeconds = 120; // Default fetch interval
+
+    private final Map<UUID, String> manualRanks = new HashMap<>(); // Store manually set ranks for players
 
     // Singleton instance
     private static BoosterConfig instance;
@@ -58,10 +63,32 @@ public class BoosterConfig {
             config.addProperty("windowY", windowY);
             config.addProperty("initialFetchDelaySeconds", initialFetchDelaySeconds);
             config.addProperty("fetchIntervalSeconds", fetchIntervalSeconds);
+
+            // Add manual ranks to the config
+            JsonObject manualRanksJson = new JsonObject();
+            for (Map.Entry<UUID, String> entry : manualRanks.entrySet()) {
+                manualRanksJson.addProperty(entry.getKey().toString(), entry.getValue());
+            }
+            config.add("manualRanks", manualRanksJson);
+
             writer.write(GSON.toJson(config));
         } catch (IOException e) {
             LOGGER.error("Failed to save config file: {}", e.getMessage(), e);
         }
+    }
+
+    public void setManualRank(UUID playerUUID, String rank) {
+        manualRanks.put(playerUUID, rank);
+        save();
+    }
+
+    public void clearManualRank(UUID playerUUID) {
+        manualRanks.remove(playerUUID);
+        save();
+    }
+
+    public String getManualRank(UUID playerUUID) {
+        return manualRanks.get(playerUUID);
     }
 
     // Save default configuration file
