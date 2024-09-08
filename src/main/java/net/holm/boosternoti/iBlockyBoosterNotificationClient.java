@@ -49,6 +49,7 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+        instance = this;
         config = BoosterConfig.load();
         boosterStatusWindow = new BoosterStatusWindow(config);
         HudRenderCallback.EVENT.register(boosterStatusWindow);
@@ -114,7 +115,7 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
     }
 
     public static iBlockyBoosterNotificationClient getInstance() {
-        return instance;  // Add a method to get the instance
+        return instance;
     }
 
     void fetchAndLogPlayerPrefix() {
@@ -262,7 +263,6 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
 
     public static void setHudVisible(boolean visible) {
         isHudVisible = visible;
-        System.out.println("HUD visibility set to: " + visible);
     }
 
     public static boolean isHudVisible() {
