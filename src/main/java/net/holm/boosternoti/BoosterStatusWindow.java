@@ -18,17 +18,19 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.text.NumberFormat;
+import java.util.Locale;
 
 import static net.holm.boosternoti.iBlockyBoosterNotificationClient.setHudVisible;
 
 public class BoosterStatusWindow implements HudRenderCallback {
-    private static final int BANNER_HEIGHT = 20; // Height of the banner at the top
-    private boolean hudVisible = true;  // Instance field to manage visibility
+    private static final int BANNER_HEIGHT = 20;
+    private boolean hudVisible = true;
     private boolean isDragging = false;
-    private boolean isCloseButtonHovered = false; // State for close button hover
-    private boolean needsRenderUpdate = true;  // Flag to indicate when rendering content is needed
-    private boolean showInstructions = true;  // Flag to manage instructions visibility
-
+    private boolean hasDragged = false;
+    private boolean isCloseButtonHovered = false;
+    private boolean needsRenderUpdate = true;
+    private boolean showInstructions = true;
     private static final Logger LOGGER = LoggerFactory.getLogger(BoosterStatusWindow.class);
 
     private int windowX, windowY;
@@ -37,7 +39,8 @@ public class BoosterStatusWindow implements HudRenderCallback {
     private static String sellBoostInfo = Formatting.RED + "Sell Boost: N/A";
     private String timeRemaining = Formatting.RED + "Tokens Booster: N/A";
     private String richBoosterTimeRemaining = Formatting.RED + "Rich Booster: N/A";
-    private String backpackTimeInfo = Formatting.RED + "Backpack Time: N/A"; // New variable to store backpack time info
+    private String backpackTimeInfo = Formatting.RED + "Backpack Time: N/A";
+    private String totalTokensInfo = Formatting.GOLD + "Total Sales: 0 Tokens"; // New variable to store total tokens info
 
     private int tokensBoosterRemainingSeconds = 0;
     private int richBoosterRemainingSeconds = 0;
@@ -45,11 +48,10 @@ public class BoosterStatusWindow implements HudRenderCallback {
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private ScheduledFuture<?> countdownTask;
 
-    private long lastLogTime = 0; // For logging control
+    private long totalSales = 0;
 
     private final BoosterConfig config;
 
-    // Key bindings for toggling instructions
     private static final KeyBinding toggleInstructionsKeyBinding = new KeyBinding(
             "key.boosternoti.toggleInstructions",
             InputUtil.Type.KEYSYM,
@@ -57,39 +59,47 @@ public class BoosterStatusWindow implements HudRenderCallback {
             "category.boosternoti.general"
     );
 
-    // Constructor initializes window position using config
     public BoosterStatusWindow(BoosterConfig config) {
-        this.config = config; // Assign the passed config to the instance field
+        this.config = config;
         windowX = config.windowX;
         windowY = config.windowY;
-        startCountdown(); // Start the countdown when the HUD is initialized
+        startCountdown();
 
-        // Register the keybinding
         KeyBindingHelper.registerKeyBinding(toggleInstructionsKeyBinding);
 
-        // Register a tick event to check for key press
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (toggleInstructionsKeyBinding.wasPressed()) {
-                showInstructions = !showInstructions;  // Toggle instructions visibility
-                needsRenderUpdate = true; // Trigger a render update
+                showInstructions = !showInstructions;
+                needsRenderUpdate = true;
             }
         });
         startBackpackTimeTracking();
     }
 
     private void startBackpackTimeTracking() {
-        // Register a tick event to regularly update the backpack time display
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            // Get the current elapsed time from BackpackSpaceTracker
             backpackTimeInfo = Formatting.AQUA + "Backpack Time: " + BackpackSpaceTracker.getElapsedTime();
-            needsRenderUpdate = true; // Trigger render update
+            needsRenderUpdate = true;
         });
+    }
+
+    private String formatWithThousandSeparator(long number) {
+        NumberFormat numberFormat = NumberFormat.getInstance(Locale.US);
+        return numberFormat.format(number);
+    }
+
+    // Method to set the total sales and update the HUD
+    public void setTotalSales(long totalSales) {
+        this.totalSales = totalSales;
+        totalTokensInfo = Formatting.GOLD + "Total Sales: " + formatWithThousandSeparator(totalSales) + " Tokens";
+        needsRenderUpdate = true;
+        // System.out.println("Total sales updated to: " + totalSales);
     }
 
     private void saveWindowPosition() {
         config.windowX = windowX;
         config.windowY = windowY;
-        config.save();  // Save the updated config to the file
+        config.save();
     }
 
     private void startCountdown() {
@@ -136,7 +146,7 @@ public class BoosterStatusWindow implements HudRenderCallback {
                 updateTotalSellBoost();
             }
 
-            needsRenderUpdate = true; // Set flag to true whenever the countdown updates
+            needsRenderUpdate = true;
         } else {
             stopCountdown();
         }
@@ -145,7 +155,7 @@ public class BoosterStatusWindow implements HudRenderCallback {
     private void updateTotalSellBoost() {
         double totalSellBoost = SellBoostCalculator.getTotalSellBoost();
         updateSellBoostDisplay(totalSellBoost);
-        needsRenderUpdate = true; // Trigger a render update whenever the total sell boost changes
+        needsRenderUpdate = true;
     }
 
     private boolean isGameActive() {
@@ -169,7 +179,7 @@ public class BoosterStatusWindow implements HudRenderCallback {
             SellBoostCalculator.setTokenBoost(0.0);
         }
         updateTokensBoosterTime();
-        needsRenderUpdate = true; // Trigger a render update when booster status changes
+        needsRenderUpdate = true;
     }
 
     public void setRichBoosterActive(boolean active, String time) {
@@ -181,7 +191,7 @@ public class BoosterStatusWindow implements HudRenderCallback {
             SellBoostCalculator.setRichPetBoost(0.0);
         }
         updateRichBoosterTime();
-        needsRenderUpdate = true; // Trigger a render update when booster status changes
+        needsRenderUpdate = true;
     }
 
     private void updateTokensBoosterTime() {
@@ -190,7 +200,7 @@ public class BoosterStatusWindow implements HudRenderCallback {
         } else {
             clearTokenBoosterInfo();
         }
-        needsRenderUpdate = true; // Trigger a render update when time changes
+        needsRenderUpdate = true;
     }
 
     private void updateRichBoosterTime() {
@@ -199,17 +209,17 @@ public class BoosterStatusWindow implements HudRenderCallback {
         } else {
             clearRichBoosterInfo();
         }
-        needsRenderUpdate = true; // Trigger a render update when time changes
+        needsRenderUpdate = true;
     }
 
     public void clearTokenBoosterInfo() {
         timeRemaining = Formatting.RED + "Tokens Booster: N/A";
-        needsRenderUpdate = true; // Trigger a render update when info is cleared
+        needsRenderUpdate = true;
     }
 
     public void clearRichBoosterInfo() {
         richBoosterTimeRemaining = Formatting.RED + "Rich Booster: N/A";
-        needsRenderUpdate = true; // Trigger a render update when info is cleared
+        needsRenderUpdate = true;
     }
 
     public void clearBoosterInfo() {
@@ -217,7 +227,15 @@ public class BoosterStatusWindow implements HudRenderCallback {
         timeRemaining = Formatting.RED + "Tokens Booster: N/A";
         richBoosterTimeRemaining = Formatting.RED + "Rich Booster: N/A";
         SellBoostCalculator.resetBoosts();
-        needsRenderUpdate = true; // Trigger a render update when all info is cleared
+        needsRenderUpdate = true;
+    }
+
+    private String tokenBalanceInfo = Formatting.GOLD + "Balance: 0 Tokens";
+
+    public void setTokenBalance(double balance) {
+        // Format the balance with thousand separators
+        tokenBalanceInfo = Formatting.GREEN + "Balance: " + String.format("%,.0f Tokens", balance);
+        needsRenderUpdate = true;
     }
 
     private String formatTime(int totalSeconds) {
@@ -243,60 +261,58 @@ public class BoosterStatusWindow implements HudRenderCallback {
 
     @Override
     public void onHudRender(DrawContext drawContext, float tickDelta) {
-        // Check if the game is active, the HUD is visible, and the player is on the correct server
         if (!isGameActive() || !iBlockyBoosterNotificationClient.isHudVisible() || !iBlockyBoosterNotificationClient.isCorrectServer()) {
-            return; // Do not render HUD if game is not active, HUD is hidden, or wrong server
+            return;
         }
 
         MinecraftClient client = MinecraftClient.getInstance();
-        int padding = 5; // Padding for the text inside the box
-        int lineHeight = 15; // Height of each line of text
-
-        // Adjust the banner height to 15px
+        int padding = 5;
+        int lineHeight = 15;
         int bannerHeight = 15;
 
-        // Calculate the maximum text width dynamically based on all HUD elements, including instructions if visible
         int maxTextWidth = Math.max(
                 Math.max(client.textRenderer.getWidth(sellBoostInfo), client.textRenderer.getWidth(timeRemaining)),
-                Math.max(client.textRenderer.getWidth(richBoosterTimeRemaining), client.textRenderer.getWidth(backpackTimeInfo)) // Include backpack time info
+                Math.max(client.textRenderer.getWidth(richBoosterTimeRemaining), client.textRenderer.getWidth(backpackTimeInfo))
         );
+
+        maxTextWidth = Math.max(maxTextWidth, client.textRenderer.getWidth(totalTokensInfo));
+        maxTextWidth = Math.max(maxTextWidth, client.textRenderer.getWidth(tokenBalanceInfo));
 
         if (showInstructions) {
             int instructionsWidth = Math.max(
                     Math.max(client.textRenderer.getWidth("----------------------"), client.textRenderer.getWidth("B - Run Booster Command")),
-                    Math.max(client.textRenderer.getWidth("H - To toggle HUD"), client.textRenderer.getWidth("N - Toggle this text"))
+                    Math.max(client.textRenderer.getWidth("/summaryclear -  To clear Total Sales"), client.textRenderer.getWidth("/summaryclear - To clear Total Sales"))
             );
             maxTextWidth = Math.max(maxTextWidth, instructionsWidth);
         }
 
-        // Calculate the number of lines to display, including backpack info and instructions
-        int lineCount = 4; // 3 lines for boosters + 1 for backpack time
+        int lineCount = 6; // 5 lines for boosters + backpack + 1 line for total tokens + 1 line for balance
+
         if (showInstructions) {
-            lineCount += 5; // Adding 5 lines for instructions (3 lines for actual text + 2 lines for separators)
+            lineCount += 6;  // Instructions take 5 extra lines
         }
 
         int windowWidth = maxTextWidth + 2 * padding;
         int windowHeight = (lineCount * lineHeight) + bannerHeight + 2 * padding;
 
-        ensureWindowWithinScreen(client, windowWidth, windowHeight);  // Ensure the window is within the screen bounds
+        ensureWindowWithinScreen(client, windowWidth, windowHeight);
 
-        // Render the banner/header with a darker background color than the HUD (darker and reduced height)
-        drawContext.fill(windowX, windowY, windowX + windowWidth, windowY + bannerHeight, 0xD0000000); // Darker banner (almost black)
+        // Render the banner
+        drawContext.fill(windowX, windowY, windowX + windowWidth, windowY + bannerHeight, 0xD0000000);
 
-        // Draw the close button (X) on the right side of the banner
+        // Render the close button at the far right
         String closeButton = "[X]";
         int closeButtonWidth = client.textRenderer.getWidth(closeButton);
         int closeButtonX = windowX + windowWidth - closeButtonWidth - padding;
         int closeButtonYStart = windowY + (bannerHeight / 2) - (client.textRenderer.fontHeight / 2);
         drawContext.drawTextWithShadow(client.textRenderer, Text.of(closeButton), closeButtonX, closeButtonYStart, 0xFFFFFF);
 
-        // Start currentY after the banner
-        int currentY = windowY + bannerHeight + padding; // Initialize the current Y position for the text after the banner
+        int currentY = windowY + bannerHeight + padding;
 
-        // Render booster information
-        drawContext.fill(windowX, windowY + bannerHeight, windowX + windowWidth, windowY + windowHeight, 0x80000000); // HUD background (transparent dark)
+        // Render the HUD elements (boosters, total sales, balance)
+        drawContext.fill(windowX, windowY + bannerHeight, windowX + windowWidth, windowY + windowHeight, 0x80000000);
         drawContext.drawTextWithShadow(client.textRenderer, Text.of(sellBoostInfo), windowX + padding, currentY, 0xFFFFFF);
-        currentY += lineHeight; // Move to the next line
+        currentY += lineHeight;
 
         drawContext.drawTextWithShadow(client.textRenderer, Text.of(timeRemaining), windowX + padding, currentY, 0xFFFFFF);
         currentY += lineHeight;
@@ -304,10 +320,16 @@ public class BoosterStatusWindow implements HudRenderCallback {
         drawContext.drawTextWithShadow(client.textRenderer, Text.of(richBoosterTimeRemaining), windowX + padding, currentY, 0xFFFFFF);
         currentY += lineHeight;
 
-        drawContext.drawTextWithShadow(client.textRenderer, Text.of(backpackTimeInfo), windowX + padding, currentY, 0xFFFFFF); // Draw backpack info
+        drawContext.drawTextWithShadow(client.textRenderer, Text.of(backpackTimeInfo), windowX + padding, currentY, 0xFFFFFF);
         currentY += lineHeight;
 
-        // Draw the instructions if visible
+        drawContext.drawTextWithShadow(client.textRenderer, Text.of(totalTokensInfo), windowX + padding, currentY, 0xFFFFFF); // Display total tokens
+        currentY += lineHeight;
+
+        drawContext.drawTextWithShadow(client.textRenderer, Text.of(tokenBalanceInfo), windowX + padding, currentY, 0xFFFFFF);
+        currentY += lineHeight;
+
+        // Render instructions if they are visible
         if (showInstructions) {
             drawContext.drawTextWithShadow(client.textRenderer, Text.of("----------------------"), windowX + padding, currentY, 0xFFFFFF);
             currentY += lineHeight;
@@ -317,36 +339,46 @@ public class BoosterStatusWindow implements HudRenderCallback {
             currentY += lineHeight;
             drawContext.drawTextWithShadow(client.textRenderer, Text.of("N - Toggle this text"), windowX + padding, currentY, 0xFFFFFF);
             currentY += lineHeight;
+            drawContext.drawTextWithShadow(client.textRenderer, Text.of("/summaryclear - To clear Total Sales"), windowX + padding, currentY, 0xFFFFFF);
+            currentY += lineHeight;
             drawContext.drawTextWithShadow(client.textRenderer, Text.of("----------------------"), windowX + padding, currentY, 0xFFFFFF);
         }
 
-        // Handle dragging only within the banner
+        // Handle dragging of the HUD
         if (isDragging) {
             double mouseX = client.mouse.getX() / client.getWindow().getScaleFactor();
             double mouseY = client.mouse.getY() / client.getWindow().getScaleFactor();
 
-            // Move the window to follow the cursor exactly, locking the initial offset to the drag start position
+            // Update the window position based on the mouse movement
             windowX = MathHelper.floor(mouseX - mouseXOffset);
             windowY = MathHelper.floor(mouseY - mouseYOffset);
 
-            ensureWindowWithinScreen(client, windowWidth, windowHeight);  // Re-check after dragging
+            // Ensure the window stays within the screen bounds
+            ensureWindowWithinScreen(client, windowWidth, windowHeight);
         }
 
-        needsRenderUpdate = false; // Reset the flag after rendering
+        needsRenderUpdate = false;
+    }
+
+    public void clearTotalSales() {
+        totalSales = 0;
+        totalTokensInfo = Formatting.GOLD + "Total Sales: 0 Tokens";
+        needsRenderUpdate = true;
+        // System.out.println("Total sales cleared.");
     }
 
     public void handleMousePress(double mouseX, double mouseY) {
-        int bannerHeight = 15; // Updated banner height
-
-        // Calculate windowWidth dynamically based on current content
         MinecraftClient client = MinecraftClient.getInstance();
         int padding = 5;
-        int lineHeight = 15;
+        int bannerHeight = 15; // Fixed banner height for close button positioning
+
+        // Calculate the window width dynamically based on whether instructions are shown or not
         int maxTextWidth = Math.max(
                 Math.max(client.textRenderer.getWidth(sellBoostInfo), client.textRenderer.getWidth(timeRemaining)),
                 Math.max(client.textRenderer.getWidth(richBoosterTimeRemaining), client.textRenderer.getWidth(backpackTimeInfo))
         );
 
+        // Add instruction width if instructions are visible
         if (showInstructions) {
             int instructionsWidth = Math.max(
                     Math.max(client.textRenderer.getWidth("----------------------"), client.textRenderer.getWidth("B - Run Booster Command")),
@@ -355,38 +387,44 @@ public class BoosterStatusWindow implements HudRenderCallback {
             maxTextWidth = Math.max(maxTextWidth, instructionsWidth);
         }
 
-        int windowWidth = maxTextWidth + 2 * padding; // Calculate the window width
+        int windowWidth = maxTextWidth + 2 * padding; // Total window width
 
-        // Handle close button click
+        // The [X] button is always at the far right of the banner
         String closeButton = "[X]";
         int closeButtonWidth = client.textRenderer.getWidth(closeButton);
-        int closeButtonXStart = windowX + windowWidth - closeButtonWidth - 5;
+        int closeButtonXStart = windowX + windowWidth - closeButtonWidth - padding; // Positioned at the far right with padding
 
-        // Check if the close button was hovered and clicked
+        // Define the hitbox for the close button
         if (mouseX >= closeButtonXStart && mouseX <= closeButtonXStart + closeButtonWidth
                 && mouseY >= windowY && mouseY <= windowY + bannerHeight) {
             isCloseButtonHovered = true;
+            LOGGER.info("Close button hovered during mouse press");
+        } else {
+            isCloseButtonHovered = false;
         }
 
         // Make the HUD draggable only from the banner area
         if (mouseX >= windowX && mouseX <= windowX + windowWidth && mouseY >= windowY && mouseY <= windowY + bannerHeight) {
             isDragging = true;
+            hasDragged = true;  // Reset the flag when dragging starts
             mouseXOffset = (int) (mouseX - windowX);
             mouseYOffset = (int) (mouseY - windowY);
+            LOGGER.info("Window drag started");
         }
     }
 
     public void handleMouseRelease(double mouseX, double mouseY) {
         MinecraftClient client = MinecraftClient.getInstance();
         int padding = 5;
-        int lineHeight = 15;
+        int bannerHeight = 15; // Fixed banner height for close button positioning
 
-        // Calculate windowWidth dynamically based on current content
+        // Calculate the window width dynamically based on whether instructions are shown or not
         int maxTextWidth = Math.max(
                 Math.max(client.textRenderer.getWidth(sellBoostInfo), client.textRenderer.getWidth(timeRemaining)),
                 Math.max(client.textRenderer.getWidth(richBoosterTimeRemaining), client.textRenderer.getWidth(backpackTimeInfo))
         );
 
+        // Add instruction width if instructions are visible
         if (showInstructions) {
             int instructionsWidth = Math.max(
                     Math.max(client.textRenderer.getWidth("----------------------"), client.textRenderer.getWidth("B - Run Booster Command")),
@@ -395,39 +433,59 @@ public class BoosterStatusWindow implements HudRenderCallback {
             maxTextWidth = Math.max(maxTextWidth, instructionsWidth);
         }
 
-        int windowWidth = maxTextWidth + 2 * padding; // Calculate the window width
+        int windowWidth = maxTextWidth + 2 * padding; // Total window width
 
-        // Close button release check
-        if (isCloseButtonHovered) {
-            String closeButton = "[X]";
-            int closeButtonWidth = client.textRenderer.getWidth(closeButton);
-            int closeButtonXStart = windowX + windowWidth - closeButtonWidth - 5;
+        // The [X] button is always at the far right of the banner
+        String closeButton = "[X]";
+        int closeButtonWidth = client.textRenderer.getWidth(closeButton);
+        int closeButtonXStart = windowX + windowWidth - closeButtonWidth - padding; // Positioned at the far right with padding
 
-            if (mouseX >= closeButtonXStart && mouseX <= closeButtonXStart + closeButtonWidth
-                    && mouseY >= windowY && mouseY <= windowY + BANNER_HEIGHT) {
-                // Close button clicked and released, hide HUD
-                iBlockyBoosterNotificationClient.toggleHudVisibility(false); // Update the main class state by hiding HUD
-                setHudVisible(false);  // Hide the HUD in the BoosterStatusWindow
-            }
-            isCloseButtonHovered = false; // Reset hover state after release
+        // Check if the close button was clicked
+        if (isCloseButtonHovered && mouseX >= closeButtonXStart && mouseX <= closeButtonXStart + closeButtonWidth
+                && mouseY >= windowY && mouseY <= windowY + bannerHeight) {
+            LOGGER.info("Close button clicked");
+            iBlockyBoosterNotificationClient.toggleHudVisibility(false); // Hide the HUD
+            setHudVisible(false);  // Hide the HUD in the BoosterStatusWindow
         }
 
-        isDragging = false;
-        saveWindowPosition();
+        // Save window position only if dragging was active and the window was moved
+        if (isDragging && hasDragged) {
+            saveWindowPosition();
+            LOGGER.info("Window position saved after dragging");
+        }
+
+        isDragging = false; // Stop dragging
+    }
+
+    public void onMouseMove(double mouseX, double mouseY) {
+        // Only update the window position if dragging is active
+        if (isDragging) {
+            MinecraftClient client = MinecraftClient.getInstance();
+
+            // Move the window to follow the cursor
+            windowX = MathHelper.floor(mouseX - mouseXOffset);
+            windowY = MathHelper.floor(mouseY - mouseYOffset);
+
+            // Mark that the window has been moved
+            hasDragged = true;
+
+            // Ensure the window stays within the screen bounds
+            ensureWindowWithinScreen(client, windowX, windowY);
+
+            LOGGER.info("Window dragged to new position: X={}, Y={}", windowX, windowY);
+        }
     }
 
     private void ensureWindowWithinScreen(MinecraftClient client, int windowWidth, int windowHeight) {
         int screenWidth = client.getWindow().getScaledWidth();
         int screenHeight = client.getWindow().getScaledHeight();
 
-        // Adjust windowX to stay within screen width
         if (windowX < 0) {
             windowX = 0;
         } else if (windowX + windowWidth > screenWidth) {
             windowX = screenWidth - windowWidth;
         }
 
-        // Adjust windowY to stay within screen height
         if (windowY < 0) {
             windowY = 0;
         } else if (windowY + windowHeight > screenHeight) {

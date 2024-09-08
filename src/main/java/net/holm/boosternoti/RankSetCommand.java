@@ -8,7 +8,6 @@ import net.minecraft.text.Text;
 
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.literal;
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.argument;

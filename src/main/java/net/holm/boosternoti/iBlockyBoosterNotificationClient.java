@@ -30,22 +30,25 @@ import java.util.regex.Pattern;
 public class iBlockyBoosterNotificationClient implements ClientModInitializer {
     private static KeyBinding boosterKeyBinding;
     private static KeyBinding toggleHudKeyBinding;
-    private String lastKnownPrefix = null;
     private static BoosterConfig config;
-    private BoosterStatusWindow boosterStatusWindow;
+    private static BoosterStatusWindow boosterStatusWindow;
     private static boolean isHudVisible = true;
+    private static SaleSummaryManager saleSummaryManager;
 
     private static final Pattern TOKEN_BOOSTER_PATTERN = Pattern.compile("\\s-\\sTokens\\s\\((\\d+(\\.\\d+)?)x\\)\\s\\((\\d+d\\s)?(\\d+h\\s)?(\\d+m\\s)?(\\d+s\\s)?remaining\\)", Pattern.CASE_INSENSITIVE);
     private static final Pattern RICH_BOOSTER_PATTERN = Pattern.compile("iBlocky → Your Rich pet has rewarded you with a 2x sell booster for the next (\\d+d\\s)?(\\d+h\\s)?(\\d+m\\s)?(\\d+s)?!");
 
     private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-
     private static final long BOOSTER_COMMAND_INTERVAL = 20 * 60; // 20 minutes in seconds
-    private ScheduledExecutorService boosterScheduler = Executors.newScheduledThreadPool(1);
+    private final ScheduledExecutorService boosterScheduler = Executors.newScheduledThreadPool(1);
     private ScheduledFuture<?> boosterTask;
 
     // Instance of the client to allow calling non-static methods
     private static iBlockyBoosterNotificationClient instance;
+
+    public static BoosterStatusWindow getBoosterStatusWindow() {
+        return boosterStatusWindow;
+    }
 
     @Override
     public void onInitializeClient() {
@@ -53,6 +56,7 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
         config = BoosterConfig.load();
         boosterStatusWindow = new BoosterStatusWindow(config);
         HudRenderCallback.EVENT.register(boosterStatusWindow);
+        saleSummaryManager = new SaleSummaryManager();
 
         BackpackSpaceTracker.init();
         registerMessageListeners();
@@ -63,9 +67,7 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
         registerBoosterScheduler();
 
         // Register the rankset command using ClientCommandRegistrationCallback
-        ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
-            RankSetCommand.register(dispatcher);
-        });
+        ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> RankSetCommand.register(dispatcher));
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (MinecraftClient.getInstance().currentScreen == null) {
@@ -73,9 +75,15 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
             }
         });
 
+        ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> SaleSummaryCommand.register(dispatcher));
+
         if (isHudVisible && isCorrectServer()) {
             registerBoosterScheduler();
         }
+    }
+
+    public static SaleSummaryManager getSaleSummaryManager() {
+        return saleSummaryManager;
     }
 
     private void registerBoosterScheduler() {
@@ -86,6 +94,7 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
         boosterTask = boosterScheduler.scheduleAtFixedRate(() -> {
             if (isHudVisible && isCorrectServer()) {
                 sendBoosterCommand();
+                fetchAndUpdateBalance();
             }
         }, 0, BOOSTER_COMMAND_INTERVAL, TimeUnit.SECONDS);
     }
@@ -99,6 +108,13 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
         return false;
     }
 
+    public void fetchAndUpdateBalance() {
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (client.player != null) {
+            client.player.networkHandler.sendChatCommand("balance");
+        }
+    }
+
     private void registerJoinEvent() {
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
             if (config == null) {
@@ -109,7 +125,6 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
         });
     }
 
-    // Non-static method to start fetching the display name periodically
     void startFetchingDisplayName() {
         scheduler.scheduleAtFixedRate(this::fetchAndLogPlayerPrefix, config.initialFetchDelaySeconds, config.fetchIntervalSeconds, TimeUnit.SECONDS);
     }
@@ -121,10 +136,9 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
     void fetchAndLogPlayerPrefix() {
         MinecraftClient client = MinecraftClient.getInstance();
 
-        // Check if the player is connected to the correct server
         if (!isCorrectServer()) {
-            System.out.println("Player is not connected to the correct server, skipping rank fetch.");
-            return;  // Exit the method if not on the correct server
+            // System.out.println("Player is not connected to the correct server, skipping rank fetch.");
+            return;
         }
 
         if (client.player != null) {
@@ -134,49 +148,36 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
             BoosterConfig config = BoosterConfig.load();
             String manualRank = config.getManualRank(playerUUID);
 
-            // Log the start of the method
-            System.out.println("Starting fetchAndLogPlayerPrefix for player: " + playerUUID);
+            // System.out.println("Starting fetchAndLogPlayerPrefix for player: " + playerUUID);
 
-            // Check if a manual rank is set
             if (manualRank != null) {
-                System.out.println("Manual rank found for player: " + manualRank);
-                SellBoostCalculator.setRank(manualRank);  // Use manually set rank
-                return;  // Exit early if manual rank is set
-            } else {
-                System.out.println("No manual rank found for player. Fetching rank from server.");
-            }
+                // System.out.println("Manual rank found for player: " + manualRank);
+                SellBoostCalculator.setRank(manualRank);
+                return;
+            } //else {
+                // System.out.println("No manual rank found for player. Fetching rank from server.");
+            //}
 
-            // Fetch and apply the rank from the server if no manual rank is set
             if (client.getNetworkHandler() == null || client.getNetworkHandler().getPlayerList().isEmpty()) {
-                System.out.println("Network handler is unavailable or player list is empty.");
-                return;  // Exit if network handler is not available
+                // System.out.println("Network handler is unavailable or player list is empty.");
+                return;
             }
 
-            // Force rank update after manual clear
-            lastKnownPrefix = null; // Reset the last known prefix to ensure rank is updated
-
-            // Iterate through the player list to fetch the prefix
             for (PlayerListEntry entry : Objects.requireNonNull(client.getNetworkHandler()).getPlayerList()) {
                 if (entry.getProfile().getId().equals(playerProfile.getId())) {
                     if (entry.getScoreboardTeam() != null) {
                         String teamPrefix = entry.getScoreboardTeam().getPrefix().getString().trim();
 
-                        // Log the fetched team prefix
-                        System.out.println("Fetched team prefix: " + teamPrefix);
-
-                        // Update regardless of whether the teamPrefix has changed
-                        System.out.println("Updating rank to: " + teamPrefix);
-                        SellBoostCalculator.setRank(teamPrefix);  // Apply the server rank boost here
-                    } else if (lastKnownPrefix != null) {
-                        lastKnownPrefix = null; // Reset the prefix if none is found
-                        System.out.println("No team prefix found, resetting the prefix.");
+                        // System.out.println("Fetched team prefix: " + teamPrefix);
+                        // System.out.println("Updating rank to: " + teamPrefix);
+                        SellBoostCalculator.setRank(teamPrefix);
                     }
-                    break;  // Exit the loop once the rank is found
+                    break;
                 }
             }
-        } else {
-            System.out.println("Player or client is null, skipping rank fetching.");
-        }
+        } //else {
+            // System.out.println("Player or client is null, skipping rank fetching.");
+        // }
     }
 
     private void registerMessageListeners() {
@@ -192,6 +193,12 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
     }
 
     private void processChatMessage(String msg, boolean ignoredIsGameMessage) {
+        if (msg.contains("§6§lBackpack Space §f§l→")) {
+            return;
+        }
+
+        // System.out.println("Processing message: " + msg);
+
         Matcher matcher = TOKEN_BOOSTER_PATTERN.matcher(msg);
         if (matcher.find()) {
             String multiplier = matcher.group(1);
@@ -202,6 +209,7 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
 
             if (multiplier != null && (!remaining.isEmpty())) {
                 boosterStatusWindow.setTokensBoosterActive(true, multiplier.trim(), remaining.toString().replace("remaining", "").trim());
+                // System.out.println("Detected Token Booster: Multiplier: " + multiplier + ", Remaining Time: " + remaining.toString().trim());
             }
         }
 
@@ -214,9 +222,48 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
 
             if (!remaining.isEmpty()) {
                 boosterStatusWindow.setRichBoosterActive(true, remaining.toString().trim());
+                // System.out.println("Detected Rich Booster: Remaining Time: " + remaining.toString().trim());
+            }
+        }
+
+        if (msg.startsWith("Token Balance:")) {
+            String balanceString = msg.substring("Token Balance:".length()).replace(",", "").trim();
+            try {
+                double balance = Double.parseDouble(balanceString);
+                boosterStatusWindow.setTokenBalance(balance);  // Update the HUD with the real balance
+                // System.out.println("Updated HUD with token balance: " + balance);
+            } catch (NumberFormatException e) {
+                System.err.println("Failed to parse token balance: " + balanceString);
+            }
+        }
+
+        if (msg.startsWith("§f§l(!) §e§lSALE §6§lSUMMARY")) {
+            // System.out.println("Captured sale summary message: " + msg);
+
+            int startIndex = msg.indexOf("§fTotal: §6") + "§fTotal: §6".length();
+            int endIndex = msg.indexOf("Tokens", startIndex);
+            if (startIndex < "§fTotal: §6".length() || endIndex == -1) {
+                System.err.println("Failed to locate total tokens in the message.");
+                return;
+            }
+            String totalString = msg.substring(startIndex, endIndex).replace("§6", "").replace(",", "").trim();
+
+            try {
+                long tokens = Long.parseLong(totalString);
+                // System.out.println("Extracted token amount: " + tokens);
+
+                SaleSummaryManager saleSummaryManager = iBlockyBoosterNotificationClient.getSaleSummaryManager();
+                saleSummaryManager.addSale(tokens);
+
+                boosterStatusWindow.setTotalSales(saleSummaryManager.getTotalSales());
+                fetchAndUpdateBalance(); // Fetch balance after updating sales
+                // System.out.println("Updated HUD with total sales: " + saleSummaryManager.getTotalSales());
+            } catch (NumberFormatException e) {
+                System.err.println("Failed to parse token value from message: " + totalString);
             }
         }
     }
+
 
     private void registerMouseEvents() {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
@@ -248,10 +295,12 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
             if (boosterKeyBinding.wasPressed()) {
                 sendBoosterCommand();
                 fetchAndLogPlayerPrefix();
+                fetchAndUpdateBalance();
             }
 
             if (toggleHudKeyBinding.wasPressed()) {
-                toggleHudVisibility(!isHudVisible);  // Toggle the HUD visibility
+                toggleHudVisibility(!isHudVisible);
+                fetchAndUpdateBalance();
             }
         });
     }
@@ -275,7 +324,6 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
         }
     }
 
-    // Public method to access the instance and call the non-static method
     public static void startFetchingDisplayNameFromInstance() {
         if (instance != null) {
             instance.startFetchingDisplayName();
