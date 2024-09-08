@@ -22,6 +22,7 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -39,12 +40,15 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
 
     private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
+    private static final long BOOSTER_COMMAND_INTERVAL = 20 * 60; // 20 minutes in seconds
+    private ScheduledExecutorService boosterScheduler = Executors.newScheduledThreadPool(1);
+    private ScheduledFuture<?> boosterTask;
+
     // Instance of the client to allow calling non-static methods
     private static iBlockyBoosterNotificationClient instance;
 
     @Override
     public void onInitializeClient() {
-        instance = this;  // Assign this instance
         config = BoosterConfig.load();
         boosterStatusWindow = new BoosterStatusWindow(config);
         HudRenderCallback.EVENT.register(boosterStatusWindow);
@@ -55,6 +59,7 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
         registerLogoutEvent();
         registerKeyBindings();
         registerJoinEvent();
+        registerBoosterScheduler();
 
         // Register the rankset command using ClientCommandRegistrationCallback
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
@@ -66,6 +71,31 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
                 boosterStatusWindow.handleScreenClose();
             }
         });
+
+        if (isHudVisible && isCorrectServer()) {
+            registerBoosterScheduler();
+        }
+    }
+
+    private void registerBoosterScheduler() {
+        if (boosterTask != null && !boosterTask.isCancelled()) {
+            boosterTask.cancel(false);
+        }
+
+        boosterTask = boosterScheduler.scheduleAtFixedRate(() -> {
+            if (isHudVisible && isCorrectServer()) {
+                sendBoosterCommand();
+            }
+        }, 0, BOOSTER_COMMAND_INTERVAL, TimeUnit.SECONDS);
+    }
+
+    static boolean isCorrectServer() {
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (client != null && client.getCurrentServerEntry() != null) {
+            String serverAddress = client.getCurrentServerEntry().address;
+            return "play.iblocky.net".equalsIgnoreCase(serverAddress);
+        }
+        return false;
     }
 
     private void registerJoinEvent() {
@@ -89,6 +119,13 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
 
     void fetchAndLogPlayerPrefix() {
         MinecraftClient client = MinecraftClient.getInstance();
+
+        // Check if the player is connected to the correct server
+        if (!isCorrectServer()) {
+            System.out.println("Player is not connected to the correct server, skipping rank fetch.");
+            return;  // Exit the method if not on the correct server
+        }
+
         if (client.player != null) {
             GameProfile playerProfile = client.player.getGameProfile();
             UUID playerUUID = playerProfile.getId();
@@ -220,11 +257,16 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
 
     public static void toggleHudVisibility(boolean visible) {
         isHudVisible = visible;
-        setHudVisible(isHudVisible); // Ensure HUD reflects the new visibility state
+        setHudVisible(isHudVisible);
     }
 
     public static void setHudVisible(boolean visible) {
         isHudVisible = visible;
+        System.out.println("HUD visibility set to: " + visible);
+    }
+
+    public static boolean isHudVisible() {
+        return isHudVisible;
     }
 
     private void sendBoosterCommand() {

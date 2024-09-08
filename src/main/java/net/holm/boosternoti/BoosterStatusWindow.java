@@ -243,8 +243,9 @@ public class BoosterStatusWindow implements HudRenderCallback {
 
     @Override
     public void onHudRender(DrawContext drawContext, float tickDelta) {
-        if (!isGameActive() || !hudVisible) {
-            return; // Do not render HUD if game is not active or if it's hidden
+        // Check if the game is active, the HUD is visible, and the player is on the correct server
+        if (!isGameActive() || !iBlockyBoosterNotificationClient.isHudVisible() || !iBlockyBoosterNotificationClient.isCorrectServer()) {
+            return; // Do not render HUD if game is not active, HUD is hidden, or wrong server
         }
 
         MinecraftClient client = MinecraftClient.getInstance();
@@ -436,6 +437,15 @@ public class BoosterStatusWindow implements HudRenderCallback {
 
     public void handleScreenClose() {
         isDragging = false;
+    }
+
+    private boolean isCorrectServer() {
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (client != null && client.getCurrentServerEntry() != null) {
+            String serverAddress = client.getCurrentServerEntry().address;
+            return "play.iblocky.net".equalsIgnoreCase(serverAddress);
+        }
+        return false;
     }
 
     private static int parseTimeToSeconds(String time) {
