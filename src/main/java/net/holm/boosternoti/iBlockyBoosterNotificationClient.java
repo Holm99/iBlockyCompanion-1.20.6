@@ -26,11 +26,11 @@ import java.util.regex.Pattern;
 
 public class iBlockyBoosterNotificationClient implements ClientModInitializer {
     private static KeyBinding boosterKeyBinding;
-    private static KeyBinding toggleHudKeyBinding;  // Keybinding for toggling HUD visibility
+    private static KeyBinding toggleHudKeyBinding;
     private String lastKnownPrefix = null;
     private static BoosterConfig config;
-    private BoosterStatusWindow boosterStatusWindow;
-    private boolean isHudVisible = true;  // HUD visibility state
+    private static BoosterStatusWindow boosterStatusWindow;
+    private static boolean isHudVisible = true;
 
     private static final Pattern TOKEN_BOOSTER_PATTERN = Pattern.compile("\\s-\\sTokens\\s\\((\\d+(\\.\\d+)?)x\\)\\s\\((\\d+d\\s)?(\\d+h\\s)?(\\d+m\\s)?(\\d+s\\s)?remaining\\)", Pattern.CASE_INSENSITIVE);
     private static final Pattern RICH_BOOSTER_PATTERN = Pattern.compile("iBlocky → Your Rich pet has rewarded you with a 2x sell booster for the next (\\d+d\\s)?(\\d+h\\s)?(\\d+m\\s)?(\\d+s)?!");
@@ -39,11 +39,10 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        config = BoosterConfig.load();  // Load once during initialization
-        boosterStatusWindow = new BoosterStatusWindow(config); // Initialize the instance
+        config = BoosterConfig.load();
+        boosterStatusWindow = new BoosterStatusWindow(config);
         HudRenderCallback.EVENT.register(boosterStatusWindow);
 
-        // Initialize other events, listeners, etc.
         BackpackSpaceTracker.init();
         registerMessageListeners();
         registerMouseEvents();
@@ -53,27 +52,21 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (MinecraftClient.getInstance().currentScreen == null) {
-                boosterStatusWindow.handleScreenClose(); // Use instance method
+                boosterStatusWindow.handleScreenClose();
             }
         });
     }
 
     private void registerJoinEvent() {
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
-            // Load config and start fetching after joining
             if (config == null) {
                 config = BoosterConfig.load();
             }
-
-            // Start fetching display name after joining
             startFetchingDisplayName();
-
-            // Ensure HUD visibility matches user setting
-            boosterStatusWindow.setHudVisible(isHudVisible);
+            boosterStatusWindow.setHudVisible(isHudVisible); // Ensure HUD reflects the new visibility state
         });
     }
 
-    // Method to start fetching the display name with a fixed rate
     private void startFetchingDisplayName() {
         scheduler.scheduleAtFixedRate(this::fetchAndLogPlayerPrefix, config.initialFetchDelaySeconds, config.fetchIntervalSeconds, TimeUnit.SECONDS);
     }
@@ -81,7 +74,6 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
     private void fetchAndLogPlayerPrefix() {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.player != null) {
-            // Get the player's UUID and GameProfile
             GameProfile playerProfile = client.player.getGameProfile();
 
             if (client.getNetworkHandler() == null || client.getNetworkHandler().getPlayerList().isEmpty()) {
@@ -90,23 +82,17 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
 
             for (PlayerListEntry entry : Objects.requireNonNull(client.getNetworkHandler()).getPlayerList()) {
                 if (entry.getProfile().getId().equals(playerProfile.getId())) {
-                    // Check if there is any team prefix (some servers use teams to set prefixes)
                     if (entry.getScoreboardTeam() != null) {
-                        String teamPrefix = entry.getScoreboardTeam().getPrefix().getString().trim();  // Trim to remove any surrounding whitespace
+                        String teamPrefix = entry.getScoreboardTeam().getPrefix().getString().trim();
 
-                        // Update only if there is a change in the prefix
                         if (!teamPrefix.equals(lastKnownPrefix)) {
                             lastKnownPrefix = teamPrefix;
                             SellBoostCalculator.setRank(teamPrefix);
                         }
-                    } else {
-                        // Handle cases where the player is not in any team
-                        if (lastKnownPrefix != null) {
-                            lastKnownPrefix = null;
-                        }
+                    } else if (lastKnownPrefix != null) {
+                        lastKnownPrefix = null;
                     }
-
-                    break; // Exit the loop once we find our player
+                    break;
                 }
             }
         }
@@ -124,38 +110,29 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
         });
     }
 
-
     private void processChatMessage(String msg, boolean ignoredIsGameMessage) {
-
         Matcher matcher = TOKEN_BOOSTER_PATTERN.matcher(msg);
         if (matcher.find()) {
             String multiplier = matcher.group(1);
             StringBuilder remaining = new StringBuilder();
-
             for (int i = 3; i <= 6; i++) {
                 if (matcher.group(i) != null) remaining.append(matcher.group(i));
             }
 
             if (multiplier != null && (!remaining.isEmpty())) {
-                multiplier = multiplier.trim();
-                remaining = new StringBuilder(remaining.toString().replace("remaining", "").trim());
-
-                boosterStatusWindow.setTokensBoosterActive(true, multiplier, remaining.toString());
+                boosterStatusWindow.setTokensBoosterActive(true, multiplier.trim(), remaining.toString().replace("remaining", "").trim());
             }
         }
 
         Matcher richMatcher = RICH_BOOSTER_PATTERN.matcher(msg);
         if (richMatcher.find()) {
             StringBuilder remaining = new StringBuilder();
-
             for (int i = 1; i <= 4; i++) {
                 if (richMatcher.group(i) != null) remaining.append(richMatcher.group(i));
             }
 
             if (!remaining.isEmpty()) {
-                remaining = new StringBuilder(remaining.toString().trim());
-
-                boosterStatusWindow.setRichBoosterActive(true, remaining.toString());
+                boosterStatusWindow.setRichBoosterActive(true, remaining.toString().trim());
             }
         }
     }
@@ -167,9 +144,9 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
                 double mouseY = client.mouse.getY() / client.getWindow().getScaleFactor();
 
                 if (GLFW.glfwGetMouseButton(client.getWindow().getHandle(), GLFW.GLFW_MOUSE_BUTTON_1) == GLFW.GLFW_PRESS) {
-                    boosterStatusWindow.handleMousePress(mouseX, mouseY); // Use instance method
+                    boosterStatusWindow.handleMousePress(mouseX, mouseY);
                 } else {
-                    boosterStatusWindow.handleMouseRelease(); // Use instance method
+                    boosterStatusWindow.handleMouseRelease(mouseX, mouseY);
                 }
             }
         });
@@ -180,19 +157,8 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
     }
 
     private void registerKeyBindings() {
-        boosterKeyBinding = new KeyBinding(
-                "key.boosternoti.booster",
-                InputUtil.Type.KEYSYM,
-                GLFW.GLFW_KEY_B,
-                "category.boosternoti.general"
-        );
-
-        toggleHudKeyBinding = new KeyBinding(  // Keybinding for toggling HUD visibility
-                "key.boosternoti.toggleHud",
-                InputUtil.Type.KEYSYM,
-                GLFW.GLFW_KEY_H,
-                "category.boosternoti.general"
-        );
+        boosterKeyBinding = new KeyBinding("key.boosternoti.booster", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_B, "category.boosternoti.general");
+        toggleHudKeyBinding = new KeyBinding("key.boosternoti.toggleHud", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_H, "category.boosternoti.general");
 
         KeyBindingHelper.registerKeyBinding(boosterKeyBinding);
         KeyBindingHelper.registerKeyBinding(toggleHudKeyBinding);
@@ -204,14 +170,14 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
             }
 
             if (toggleHudKeyBinding.wasPressed()) {
-                toggleHudVisibility();  // Call toggle method when key is pressed
+                toggleHudVisibility(!isHudVisible);  // Toggle the HUD visibility
             }
         });
     }
 
-    private void toggleHudVisibility() {
-        isHudVisible = !isHudVisible;  // Toggle the visibility state
-        boosterStatusWindow.setHudVisible(isHudVisible);
+    public static void toggleHudVisibility(boolean visible) {
+        isHudVisible = visible;
+        boosterStatusWindow.setHudVisible(isHudVisible); // Ensure HUD reflects the new visibility state
     }
 
     private void sendBoosterCommand() {
