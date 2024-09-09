@@ -18,6 +18,8 @@ import com.mojang.authlib.GameProfile;
 import org.lwjgl.glfw.GLFW;
 
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.Executors;
@@ -37,6 +39,9 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
 
     private static final Pattern TOKEN_BOOSTER_PATTERN = Pattern.compile("\\s-\\sTokens\\s\\((\\d+(\\.\\d+)?)x\\)\\s\\((\\d+d\\s)?(\\d+h\\s)?(\\d+m\\s)?(\\d+s\\s)?remaining\\)", Pattern.CASE_INSENSITIVE);
     private static final Pattern RICH_BOOSTER_PATTERN = Pattern.compile("iBlocky → Your Rich pet has rewarded you with a 2x sell booster for the next (\\d+d\\s)?(\\d+h\\s)?(\\d+m\\s)?(\\d+s)?!");
+    private static final Pattern PURCHASED_LEVELS_PATTERN = Pattern.compile("Purchased (\\d+) levels of ([A-Za-z ]+)");
+    private static final Pattern LEVELED_UP_PATTERN = Pattern.compile("You leveled up ([A-Za-z ]+) to level (\\d+) for ([\\d,.]+) tokens!");
+
 
     private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private static final long BOOSTER_COMMAND_INTERVAL = 20 * 60; // 20 minutes in seconds
@@ -48,6 +53,30 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
 
     public static BoosterStatusWindow getBoosterStatusWindow() {
         return boosterStatusWindow;
+    }
+
+    private static final Map<String, String> availableEnchants = new HashMap<>();
+
+    static {
+        availableEnchants.put("Locksmith", "Locksmith");
+        availableEnchants.put("Jurassic", "Jurassic");
+        availableEnchants.put("Terminator", "Terminator");
+        availableEnchants.put("Efficiency", "Efficiency");
+        availableEnchants.put("Explosive", "Explosive");
+        availableEnchants.put("Greed", "Greed");
+        availableEnchants.put("Drill", "Drill");
+        availableEnchants.put("Profit", "Profit");
+        availableEnchants.put("Multiplier", "Multiplier");
+        availableEnchants.put("Spelunker", "Spelunker");
+        availableEnchants.put("Spirit", "Spirit");
+        availableEnchants.put("Vein Miner", "Vein Miner");
+        availableEnchants.put("Cubed", "Cubed");
+        availableEnchants.put("Jackhammer", "Jackhammer");
+        availableEnchants.put("Stellar Sight", "Stellar Sight");
+        availableEnchants.put("Speed", "Speed");
+        availableEnchants.put("Starstruck", "Starstruck");
+        availableEnchants.put("Blackhole", "Blackhole");
+        availableEnchants.put("Lucky", "Lucky");
     }
 
     @Override
@@ -65,6 +94,12 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
         registerKeyBindings();
         registerJoinEvent();
         registerBoosterScheduler();
+        HubCommand.register();
+        try {
+            LogFilter.applyLogFilter();
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
 
         // Register the rankset command using ClientCommandRegistrationCallback
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> RankSetCommand.register(dispatcher));
@@ -197,22 +232,21 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
             return;
         }
 
-        // System.out.println("Processing message: " + msg);
-
+        // Token booster detection
         Matcher matcher = TOKEN_BOOSTER_PATTERN.matcher(msg);
         if (matcher.find()) {
             String multiplier = matcher.group(1);
             StringBuilder remaining = new StringBuilder();
-            for (int i = 3; i <= 6; i++) {
+            for (int i = 2; i <= 5; i++) {
                 if (matcher.group(i) != null) remaining.append(matcher.group(i));
             }
 
-            if (multiplier != null && (!remaining.isEmpty())) {
+            if (multiplier != null && !remaining.isEmpty()) {
                 boosterStatusWindow.setTokensBoosterActive(true, multiplier.trim(), remaining.toString().replace("remaining", "").trim());
-                // System.out.println("Detected Token Booster: Multiplier: " + multiplier + ", Remaining Time: " + remaining.toString().trim());
             }
         }
 
+        // Rich booster detection
         Matcher richMatcher = RICH_BOOSTER_PATTERN.matcher(msg);
         if (richMatcher.find()) {
             StringBuilder remaining = new StringBuilder();
@@ -222,24 +256,22 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
 
             if (!remaining.isEmpty()) {
                 boosterStatusWindow.setRichBoosterActive(true, remaining.toString().trim());
-                // System.out.println("Detected Rich Booster: Remaining Time: " + remaining.toString().trim());
             }
         }
 
+        // Token balance detection
         if (msg.startsWith("Token Balance:")) {
             String balanceString = msg.substring("Token Balance:".length()).replace(",", "").trim();
             try {
                 double balance = Double.parseDouble(balanceString);
                 boosterStatusWindow.setTokenBalance(balance);  // Update the HUD with the real balance
-                // System.out.println("Updated HUD with token balance: " + balance);
             } catch (NumberFormatException e) {
                 System.err.println("Failed to parse token balance: " + balanceString);
             }
         }
 
+        // Sale summary detection
         if (msg.startsWith("§f§l(!) §e§lSALE §6§lSUMMARY")) {
-            // System.out.println("Captured sale summary message: " + msg);
-
             int startIndex = msg.indexOf("§fTotal: §6") + "§fTotal: §6".length();
             int endIndex = msg.indexOf("Tokens", startIndex);
             if (startIndex < "§fTotal: §6".length() || endIndex == -1) {
@@ -250,20 +282,34 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
 
             try {
                 long tokens = Long.parseLong(totalString);
-                // System.out.println("Extracted token amount: " + tokens);
-
                 SaleSummaryManager saleSummaryManager = iBlockyBoosterNotificationClient.getSaleSummaryManager();
                 saleSummaryManager.addSale(tokens);
-
                 boosterStatusWindow.setTotalSales(saleSummaryManager.getTotalSales());
                 fetchAndUpdateBalance(); // Fetch balance after updating sales
-                // System.out.println("Updated HUD with total sales: " + saleSummaryManager.getTotalSales());
             } catch (NumberFormatException e) {
                 System.err.println("Failed to parse token value from message: " + totalString);
             }
         }
-    }
 
+        // Purchased levels of an enchant detection
+        Matcher purchaseMatcher = PURCHASED_LEVELS_PATTERN.matcher(msg);
+        if (purchaseMatcher.find()) {
+            String amount = purchaseMatcher.group(1);  // Extract the amount purchased
+            String enchantName = purchaseMatcher.group(2).trim();  // Extract the enchant name
+
+            if (availableEnchants.containsKey(enchantName)) {
+                fetchAndUpdateBalance();  // Fetch balance after purchase
+            }
+        }
+
+        // Leveled up enchant detection
+        Matcher levelUpMatcher = LEVELED_UP_PATTERN.matcher(msg);
+        if (levelUpMatcher.find()) {
+            String enchantName = levelUpMatcher.group(1).trim();  // Extract enchant name
+            String amount = levelUpMatcher.group(2).trim();  // Extract the new level
+            fetchAndUpdateBalance();  // Fetch balance after leveling up an enchant
+        }
+    }
 
     private void registerMouseEvents() {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {

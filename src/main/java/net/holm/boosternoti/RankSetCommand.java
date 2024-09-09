@@ -16,7 +16,26 @@ public class RankSetCommand {
 
     public static void register(CommandDispatcher<FabricClientCommandSource> dispatcher) {
         dispatcher.register(literal("rankset")
-                .then(argument("rank", StringArgumentType.greedyString())  // Use greedyString to handle spaces
+                .then(literal("clear")  // Explicitly handle "clear" command first
+                        .executes(context -> {
+                            MinecraftClient client = MinecraftClient.getInstance();
+
+                            if (client != null && client.player != null) {
+                                UUID playerUUID = client.player.getUuid();
+                                BoosterConfig config = BoosterConfig.load();
+
+                                // Clear manual rank
+                                config.clearManualRank(playerUUID);
+                                client.player.sendMessage(Text.of("Manual rank cleared. Fetching rank from server..."), false);
+
+                                // Immediately fetch and apply the rank from the server
+                                iBlockyBoosterNotificationClient.getInstance().fetchAndLogPlayerPrefix();
+
+                                return 1;
+                            }
+                            return 0;
+                        }))
+                .then(argument("rank", StringArgumentType.greedyString())  // Now handle "rank" argument separately
                         .suggests((context, builder) -> {
                             // Suggest ranks from the aliasMap, sorted alphabetically
                             Map<String, String> aliasMap = SellBoostCalculator.getAliasMap();
@@ -52,25 +71,6 @@ public class RankSetCommand {
                                     client.player.sendMessage(Text.of("Invalid rank: " + rank), false);
                                     return 0;  // Failure
                                 }
-                            }
-                            return 0;
-                        }))
-                .then(literal("clear")
-                        .executes(context -> {
-                            MinecraftClient client = MinecraftClient.getInstance();
-
-                            if (client != null && client.player != null) {
-                                UUID playerUUID = client.player.getUuid();
-                                BoosterConfig config = BoosterConfig.load();
-
-                                // Clear manual rank
-                                config.clearManualRank(playerUUID);
-                                client.player.sendMessage(Text.of("Manual rank cleared. Fetching rank from server..."), false);
-
-                                // Immediately fetch and apply the rank from the server
-                                iBlockyBoosterNotificationClient.getInstance().fetchAndLogPlayerPrefix();
-
-                                return 1;
                             }
                             return 0;
                         }))
