@@ -509,23 +509,30 @@ public class BoosterStatusWindow implements HudRenderCallback {
     private static int parseTimeToSeconds(String time) {
         int totalSeconds = 0;
 
+        // Split the time string by spaces, expecting parts like '2d', '23h', '57m', and '38s'
         String[] parts = time.split(" ");
         for (String part : parts) {
-            if (part.endsWith("d")) {
-                int days = Integer.parseInt(part.replace("d", ""));
-                totalSeconds += days * 86400;
-            } else if (part.endsWith("h")) {
-                int hours = Integer.parseInt(part.replace("h", ""));
-                totalSeconds += hours * 3600;
-            } else if (part.endsWith("m")) {
-                int minutes = Integer.parseInt(part.replace("m", ""));
-                totalSeconds += minutes * 60;
-            } else if (part.endsWith("s")) {
-                int seconds = Integer.parseInt(part.replace("s", ""));
-                totalSeconds += seconds;
+            try {
+                if (part.endsWith("d")) {
+                    int days = Integer.parseInt(part.replace("d", ""));
+                    totalSeconds += days * 86400;  // Convert days to seconds
+                } else if (part.endsWith("h")) {
+                    int hours = Integer.parseInt(part.replace("h", ""));
+                    totalSeconds += hours * 3600;  // Convert hours to seconds
+                } else if (part.endsWith("m")) {
+                    int minutes = Integer.parseInt(part.replace("m", ""));
+                    totalSeconds += minutes * 60;  // Convert minutes to seconds
+                } else if (part.endsWith("s")) {
+                    int seconds = Integer.parseInt(part.replace("s", ""));
+                    totalSeconds += seconds;  // Add seconds
+                }
+            } catch (NumberFormatException e) {
+                System.err.println("Failed to parse time part: " + part);
             }
         }
 
+        System.out.println("Total seconds calculated: " + totalSeconds);  // Log total seconds calculated
         return totalSeconds;
     }
+
 }

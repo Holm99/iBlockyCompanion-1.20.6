@@ -20,6 +20,9 @@ public class HubCommand {
     private static final Pattern UNKNOWN_COMMAND_PATTERN = Pattern.compile("Unknown command\\.");
     private static final Pattern KICKED_FROM_PRISON_PATTERN = Pattern.compile("You were kicked from Prison-\\d+: Kicked for spamming");
     private static final Pattern KICKED_FROM_HUB_PATTERN = Pattern.compile("You were kicked from Hub-\\d+: Kicked for spamming");
+    private static final Pattern QUICKCOMMAND_PATTERN = Pattern.compile("Slow down, you're executing commands too quickly\\.");
+    private static final Pattern KICKED_FROM_SURVIVALSPAWN_PATTERN = Pattern.compile("You were kicked from SurvivalSpawn-\\d+: Kicked for spamming");
+
 
     public static void register() {
         // Register the /hub command
@@ -45,7 +48,7 @@ public class HubCommand {
 
             // Block unknown command messages or kicked messages
             if (suppressMessages && (UNKNOWN_COMMAND_PATTERN.matcher(msg).find() ||
-                    KICKED_FROM_PRISON_PATTERN.matcher(msg).find() || KICKED_FROM_HUB_PATTERN.matcher(msg).find())) {
+                    KICKED_FROM_PRISON_PATTERN.matcher(msg).find() || KICKED_FROM_HUB_PATTERN.matcher(msg).find() || KICKED_FROM_SURVIVALSPAWN_PATTERN.matcher(msg).find() || QUICKCOMMAND_PATTERN.matcher(msg).find())) {
                 return false;  // Suppress these specific messages
             }
             return true; // Allow other messages to pass through

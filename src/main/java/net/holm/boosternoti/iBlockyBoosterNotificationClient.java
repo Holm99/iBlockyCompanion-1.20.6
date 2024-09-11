@@ -37,7 +37,10 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
     private static boolean isHudVisible = true;
     private static SaleSummaryManager saleSummaryManager;
 
-    private static final Pattern TOKEN_BOOSTER_PATTERN = Pattern.compile("\\s-\\sTokens\\s\\((\\d+(\\.\\d+)?)x\\)\\s\\((\\d+d\\s)?(\\d+h\\s)?(\\d+m\\s)?(\\d+s\\s)?remaining\\)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern TOKEN_BOOSTER_PATTERN = Pattern.compile(
+            "\\s-\\sTokens\\s\\((\\d+(\\.\\d+)?)x\\)\\s\\((\\d+d\\s)?(\\d+h\\s)?(\\d+m\\s)?(\\d+s\\s)?remaining\\)",
+            Pattern.CASE_INSENSITIVE
+    );
     private static final Pattern RICH_BOOSTER_PATTERN = Pattern.compile("iBlocky → Your Rich pet has rewarded you with a 2x sell booster for the next (\\d+d\\s)?(\\d+h\\s)?(\\d+m\\s)?(\\d+s)?!");
     private static final Pattern PURCHASED_LEVELS_PATTERN = Pattern.compile("Purchased (\\d+) levels of ([A-Za-z ]+)");
     private static final Pattern LEVELED_UP_PATTERN = Pattern.compile("You leveled up ([A-Za-z ]+) to level (\\d+) for ([\\d,.]+) tokens!");
@@ -100,6 +103,7 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
         } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
         }
+        // Start the PlayerListScheduler which will handle player list sorting based on the schedule
 
         // Register the rankset command using ClientCommandRegistrationCallback
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> RankSetCommand.register(dispatcher));
@@ -235,13 +239,15 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
         // Token booster detection
         Matcher matcher = TOKEN_BOOSTER_PATTERN.matcher(msg);
         if (matcher.find()) {
-            String multiplier = matcher.group(1);
+            String multiplier = matcher.group(1);  // This extracts the 1.1x boost part
             StringBuilder remaining = new StringBuilder();
-            for (int i = 2; i <= 5; i++) {
-                if (matcher.group(i) != null) remaining.append(matcher.group(i));
+            for (int i = 3; i <= 6; i++) {  // Groups 3 to 6 correspond to days, hours, minutes, and seconds
+                if (matcher.group(i) != null) {
+                    remaining.append(matcher.group(i));
+                }
             }
-
-            if (multiplier != null && !remaining.isEmpty()) {
+            System.out.println("Extracted remaining time: " + remaining.toString());  // Log to see what's extracted
+            if (!remaining.isEmpty()) {
                 boosterStatusWindow.setTokensBoosterActive(true, multiplier.trim(), remaining.toString().replace("remaining", "").trim());
             }
         }
