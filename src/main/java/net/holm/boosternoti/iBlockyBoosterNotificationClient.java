@@ -18,10 +18,7 @@ import com.mojang.authlib.GameProfile;
 import org.lwjgl.glfw.GLFW;
 
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -34,6 +31,7 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
     private static KeyBinding toggleHudKeyBinding;
     private static KeyBinding showPlayerListKeyBinding; // Keybind for player list
     private static KeyBinding toggleInstructionsKeyBinding;
+    private static KeyBinding testPickaxeDataKeyBinding;
     private static BoosterConfig config;
     private static BoosterStatusWindow boosterStatusWindow;
     private static CustomPlayerList customPlayerList;  // Custom player list instance
@@ -59,8 +57,8 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
     public static BoosterStatusWindow getBoosterStatusWindow() {
         return boosterStatusWindow;
     }
-    private static final Map<String, String> availableEnchants = new HashMap<>();
 
+    private static final Map<String, String> availableEnchants = new HashMap<>();
     static {
         availableEnchants.put("Locksmith", "Locksmith");
         availableEnchants.put("Jurassic", "Jurassic");
@@ -102,6 +100,14 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
                 customPlayerList.renderPlayerList(drawContext);  // Pass the drawContext here
             }
         });
+    }
+
+    private void runPickaxeDataFetcher() {
+        // Call the method to fetch and read pickaxe data
+        PickaxeDataFetcher.readPickaxeComponentData();
+
+        // You can add additional checks or processing here if needed
+        // The component data will be printed by the method itself
     }
 
     public void registerJoinEvent() {
@@ -359,11 +365,13 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
         toggleHudKeyBinding = new KeyBinding("key.boosternoti.toggleHud", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_H, "category.boosternoti.general");
         showPlayerListKeyBinding = new KeyBinding("key.boosternoti.showPlayerList", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_O, "category.boosternoti.general");
         toggleInstructionsKeyBinding = new KeyBinding("key.boosternoti.toggleInstructions", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_N, "category.boosternoti.general");
+        testPickaxeDataKeyBinding = new KeyBinding("key.iblockybooster.testPickaxeData",InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_G, "category.boosternoti.general");
 
         KeyBindingHelper.registerKeyBinding(boosterKeyBinding);
         KeyBindingHelper.registerKeyBinding(toggleHudKeyBinding);
         KeyBindingHelper.registerKeyBinding(showPlayerListKeyBinding);
         KeyBindingHelper.registerKeyBinding(toggleInstructionsKeyBinding);
+        KeyBindingHelper.registerKeyBinding(testPickaxeDataKeyBinding);
 
         // Handle key events during the client tick
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
@@ -386,6 +394,12 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
             if (toggleInstructionsKeyBinding.wasPressed()) {
                 boosterStatusWindow.toggleInstructions(); // Trigger instructions toggle
             }
+
+            if (testPickaxeDataKeyBinding.wasPressed()) {
+                System.out.println("Pickaxe Data Fetcher key pressed.");
+                runPickaxeDataFetcher(); // Run the Pickaxe Data Fetcher when the key is pressed
+            }
+
         });
     }
 

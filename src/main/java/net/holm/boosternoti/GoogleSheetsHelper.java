@@ -18,6 +18,7 @@ public class GoogleSheetsHelper {
     private static Sheets sheetsService;
     private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
 
+    // Initialize the Sheets service
     public static Sheets getSheetsService() throws IOException, GeneralSecurityException {
         if (sheetsService == null) {
             // Load the service account key file from the resources folder
@@ -30,6 +31,7 @@ public class GoogleSheetsHelper {
             ServiceAccountCredentials credentials = (ServiceAccountCredentials) ServiceAccountCredentials.fromStream(serviceAccountStream)
                     .createScoped(Collections.singleton(SheetsScopes.SPREADSHEETS_READONLY));
 
+            // Build the Sheets API service
             sheetsService = new Sheets.Builder(
                     new NetHttpTransport(),
                     JSON_FACTORY,

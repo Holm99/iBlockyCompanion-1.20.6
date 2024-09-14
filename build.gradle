@@ -36,11 +36,11 @@ dependencies {
 
 	// Google Sheets API dependencies
 	implementation 'com.google.api-client:google-api-client:2.7.0'
+	implementation 'com.google.apis:google-api-services-sheets:v4-rev20240826-2.0.0'
 	implementation 'com.google.oauth-client:google-oauth-client-jetty:1.36.0'
-	implementation 'com.google.apis:google-api-services-sheets:v4-rev612-1.25.0'
 
 	// Gson for JSON processing
-	implementation 'com.google.http-client:google-http-client-gson:1.40.0'  // Google HTTP Client with Gson support
+	implementation 'com.google.http-client:google-http-client-gson:1.40.0'
 }
 
 loom {
