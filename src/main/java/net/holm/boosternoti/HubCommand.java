@@ -61,7 +61,7 @@ public class HubCommand {
             suppressMessages = true; // Start suppressing messages
             ticksToSuppress = 40;    // Suppress messages for 2 seconds (40 ticks)
 
-            for (int i = 0; i < 20; i++) {  // Send a fake command 10 times
+            for (int i = 0; i < 20; i++) {  // Send a fake command 20 times
                 client.player.networkHandler.sendChatCommand("asdfekugi");
             }
         }
