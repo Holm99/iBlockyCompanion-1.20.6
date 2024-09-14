@@ -11,20 +11,36 @@ base {
 }
 
 repositories {
-	// Essential repositories for Minecraft and modding dependencies
+	// Fabric repository
+	maven {
+		name = "Fabric"
+		url = "https://maven.fabricmc.net/"
+	}
+
+	// Maven Central repository
 	mavenCentral()
-	maven { url = 'https://maven.fabricmc.net/' }
+
+	// Google's Maven repository
+	maven {
+		url 'https://maven.google.com'
+	}
 }
 
 dependencies {
+	// Minecraft dependencies
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
 	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
 	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
-	modImplementation "net.fabricmc.fabric-api:fabric-key-binding-api-v1:${fabric_version}"
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-	implementation 'com.google.api-client:google-api-client:1.33.0'
-	implementation 'com.google.oauth-client:google-oauth-client-jetty:1.33.1'
-	implementation 'com.google.apis:google-api-services-sheets:v4-rev614-1.25.0'
+	modImplementation "net.fabricmc.fabric-api:fabric-key-binding-api-v1:${fabric_version}"
+
+	// Google Sheets API dependencies
+	implementation 'com.google.api-client:google-api-client:2.7.0'
+	implementation 'com.google.oauth-client:google-oauth-client-jetty:1.36.0'
+	implementation 'com.google.apis:google-api-services-sheets:v4-rev612-1.25.0'
+
+	// Gson for JSON processing
+	implementation 'com.google.http-client:google-http-client-gson:1.40.0'  // Google HTTP Client with Gson support
 }
 
 loom {
