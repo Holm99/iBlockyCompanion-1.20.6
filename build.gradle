@@ -22,6 +22,9 @@ dependencies {
 	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 	modImplementation "net.fabricmc.fabric-api:fabric-key-binding-api-v1:${fabric_version}"
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+	implementation 'com.google.api-client:google-api-client:1.33.0'
+	implementation 'com.google.oauth-client:google-oauth-client-jetty:1.33.1'
+	implementation 'com.google.apis:google-api-services-sheets:v4-rev614-1.25.0'
 }
 
 loom {
