@@ -52,6 +52,8 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
     private static final long BOOSTER_COMMAND_INTERVAL = 20 * 60; // 20 minutes in seconds
     private final ScheduledExecutorService boosterScheduler = Executors.newScheduledThreadPool(1);
     private ScheduledFuture<?> boosterTask;
+    private final ScheduledExecutorService refreshScheduler = Executors.newScheduledThreadPool(1);  // Renamed to avoid conflict
+    private ScheduledFuture<?> refreshTask;
 
     private static iBlockyBoosterNotificationClient instance;
     public static BoosterStatusWindow getBoosterStatusWindow() {
@@ -386,9 +388,16 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
                 fetchAndUpdateBalance();
             }
 
-            if (showPlayerListKeyBinding.wasPressed() && isCorrectServer()) {
-                showPlayerList = !showPlayerList;
-                customPlayerList.refreshPlayerList();
+            if (showPlayerListKeyBinding.isPressed() && isCorrectServer()) {
+                if (!showPlayerList) {
+                    startRefreshingPlayerList();
+                    showPlayerList = true;
+                }
+            } else {
+                if (showPlayerList) {
+                    stopRefreshingPlayerList();
+                    showPlayerList = false;
+                }
             }
 
             if (toggleInstructionsKeyBinding.wasPressed()) {
@@ -403,7 +412,23 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
         });
     }
 
+    private void startRefreshingPlayerList() {
+        if (refreshTask == null || refreshTask.isCancelled()) {
+            // Refresh the player list every second while the key is held
+            refreshTask = refreshScheduler.scheduleAtFixedRate(() -> {
+                if (showPlayerList) {
+                    customPlayerList.refreshPlayerList();  // Refresh the player list
+                    System.out.println("Player list is being refreshed.");
+                }
+            }, 0, 1, TimeUnit.SECONDS);
+        }
+    }
 
+    private void stopRefreshingPlayerList() {
+        if (refreshTask != null && !refreshTask.isCancelled()) {
+            refreshTask.cancel(false);  // Stop refreshing the player list when the key is released
+        }
+    }
 
     public static void toggleHudVisibility(boolean visible) {
         isHudVisible = visible;
