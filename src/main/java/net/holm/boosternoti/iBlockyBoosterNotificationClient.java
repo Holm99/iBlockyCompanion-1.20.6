@@ -47,7 +47,9 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
             "\\s-\\sTokens\\s\\((\\d+(\\.\\d+)?)x\\)\\s\\((\\d+d\\s)?(\\d+h\\s)?(\\d+m\\s)?(\\d+s\\s)?remaining\\)",
             Pattern.CASE_INSENSITIVE
     );
+
     private static final Pattern RICH_BOOSTER_PATTERN = Pattern.compile("iBlocky → Your Rich pet has rewarded you with a 2x sell booster for the next (\\d+d\\s)?(\\d+h\\s)?(\\d+m\\s)?(\\d+s)?!");
+    private static final Pattern PRESTIGED_ENCHANT_PATTERN = Pattern.compile("You prestiged ([A-Za-z ]+) to (\\d+)");
     private static final Pattern PURCHASED_LEVELS_PATTERN = Pattern.compile("Purchased (\\d+) levels of ([A-Za-z ]+)");
     private static final Pattern LEVELED_UP_PATTERN = Pattern.compile("You leveled up ([A-Za-z ]+) to level (\\d+) for ([\\d,.]+) tokens!");
     private boolean hudInitialized = false; // Add a flag to check if the HUD has already been initialized
@@ -189,11 +191,12 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
             HudRenderCallback.EVENT.register(boosterStatusWindow);
 
             // Initialize and register EnchantHUD
-            enchantHUD = new EnchantHUD(); // Proper initialization of EnchantHUD
+            enchantHUD = new EnchantHUD(config); // Pass config to EnchantHUD
             HudRenderCallback.EVENT.register(enchantHUD); // Register HUD rendering for EnchantHUD
 
             // Initialize other components
             PickaxeDataFetcher.readPickaxeComponentData();
+            enchantHUD.updateEnchantNames();
             saleSummaryManager = new SaleSummaryManager();
             BackpackSpaceTracker.init();
             registerMessageListeners();
@@ -391,6 +394,21 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
 
             if (availableEnchants.containsKey(enchantName)) {
                 fetchAndUpdateBalance();
+                PickaxeDataFetcher.readPickaxeComponentData();
+                enchantHUD.updateEnchantNames();
+            }
+        }
+
+        // Purchased levels of an enchant detection
+        Matcher prestigeMatcher = PRESTIGED_ENCHANT_PATTERN.matcher(msg);
+        if (prestigeMatcher.find()) {
+            String enchantName = prestigeMatcher.group(1).trim();
+            String amount = prestigeMatcher.group(2).trim();
+
+            if (availableEnchants.containsKey(enchantName)) {
+                fetchAndUpdateBalance();
+                PickaxeDataFetcher.readPickaxeComponentData();
+                enchantHUD.updateEnchantNames();
             }
         }
 
@@ -401,6 +419,7 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
             String amount = levelUpMatcher.group(2).trim();
             fetchAndUpdateBalance();
             PickaxeDataFetcher.readPickaxeComponentData();
+            enchantHUD.updateEnchantNames();
         }
     }
 
@@ -410,13 +429,17 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
                 double mouseX = client.mouse.getX() / client.getWindow().getScaleFactor();
                 double mouseY = client.mouse.getY() / client.getWindow().getScaleFactor();
 
+                // Handle mouse press and release for BoosterStatusWindow and EnchantHUD
                 if (GLFW.glfwGetMouseButton(client.getWindow().getHandle(), GLFW.GLFW_MOUSE_BUTTON_1) == GLFW.GLFW_PRESS) {
                     boosterStatusWindow.handleMousePress(mouseX, mouseY);
+                    enchantHUD.handleMousePress(mouseX, mouseY); // Handle press for EnchantHUD
                 } else if (GLFW.glfwGetMouseButton(client.getWindow().getHandle(), GLFW.GLFW_MOUSE_BUTTON_1) == GLFW.GLFW_RELEASE) {
-                    boosterStatusWindow.handleMouseRelease(mouseX, mouseY);
+                    boosterStatusWindow.handleMouseRelease(); // No parameters needed
+                    enchantHUD.handleMouseRelease(); // Handle release for EnchantHUD
                 }
 
-                boosterStatusWindow.onMouseMove(mouseX, mouseY);  // Always track mouse move
+                boosterStatusWindow.onMouseMove(mouseX, mouseY);  // Always track mouse move for BoosterStatusWindow
+                enchantHUD.onMouseMove(mouseX, mouseY);  // Always track mouse move for EnchantHUD
             }
         });
     }

@@ -23,8 +23,10 @@ public class BoosterConfig {
     private static final Path CONFIG_PATH = Paths.get("config/iblocky_boosternoti.json");
     private static final Logger LOGGER = LoggerFactory.getLogger(BoosterConfig.class);
 
-    public int windowX = 100; // Default X position
-    public int windowY = 100; // Default Y position
+    public int BoosterStatusWindowX = 100; // Default X position for BoosterStatusWindow
+    public int BoosterStatusWindowY = 100; // Default Y position for BoosterStatusWindow
+    public int enchantHUDWindowX = 0; // Default X position for EnchantHUD
+    public int enchantHUDWindowY = 0; // Default Y position for EnchantHUD
     public int initialFetchDelaySeconds = 30; // Default fetch delay
     public int fetchIntervalSeconds = 120; // Default fetch interval
 
@@ -59,8 +61,10 @@ public class BoosterConfig {
     public void save() {
         try (FileWriter writer = new FileWriter(CONFIG_PATH.toFile())) {
             JsonObject config = new JsonObject();
-            config.addProperty("windowX", windowX);
-            config.addProperty("windowY", windowY);
+            config.addProperty("BoosterStatusWindowX", BoosterStatusWindowX);
+            config.addProperty("BoosterStatusWindowY", BoosterStatusWindowY);
+            config.addProperty("enchantHUDWindowX", enchantHUDWindowX);
+            config.addProperty("enchantHUDWindowY", enchantHUDWindowY);
             config.addProperty("initialFetchDelaySeconds", initialFetchDelaySeconds);
             config.addProperty("fetchIntervalSeconds", fetchIntervalSeconds);
 
