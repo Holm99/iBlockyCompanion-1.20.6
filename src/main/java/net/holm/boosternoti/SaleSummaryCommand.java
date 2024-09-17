@@ -12,13 +12,19 @@ public class SaleSummaryCommand {
     public static void register(CommandDispatcher<FabricClientCommandSource> dispatcher) {
         dispatcher.register(literal("summaryclear")
                 .executes(context -> {
+                    // Check if the player is on the correct server and game mode
+                    if (!iBlockyBoosterNotificationClient.isCorrectServer() || !iBlockyBoosterNotificationClient.getInstance().isCorrectGameMode()) {
+                        assert MinecraftClient.getInstance().player != null;
+                        MinecraftClient.getInstance().player.sendMessage(Text.of("This command is only available on the correct server and game mode."), false);
+                        return 0;  // Command fails
+                    }
+
                     // Clear the internal sales data
                     SaleSummaryManager saleSummaryManager = iBlockyBoosterNotificationClient.getSaleSummaryManager();
                     saleSummaryManager.clearSales();
 
                     // Clear the HUD display
-                    BoosterStatusWindow boosterStatusWindow = iBlockyBoosterNotificationClient.getBoosterStatusWindow();
-                    boosterStatusWindow.clearTotalSales();  // Clear the total sales on the HUD
+                    iBlockyBoosterNotificationClient.boosterStatusWindow.clearTotalSales();  // Clear the total sales on the HUD
 
                     // Notify the player
                     assert MinecraftClient.getInstance().player != null;

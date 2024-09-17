@@ -16,9 +16,11 @@ public class CustomPlayerList {
     private static List<PlayerListEntry> sortedEntries = new ArrayList<>();
     private static long lastUpdateHash = -1;
     private static boolean needsSorting = true;
+    private String currentGameMode = "Unknown";
+    private boolean gameModeDetected = false;
 
     static {
-        // Rank weight map
+        // Rank weight map for Prison
         rankWeightMap.put("ᴀᴅᴍɪɴ", 14);
         rankWeightMap.put("ꜱᴇɴɪᴏʀ ᴍᴏᴅᴇʀᴀᴛᴏʀ", 13);
         rankWeightMap.put("ᴍᴏᴅᴇʀᴀᴛᴏʀ", 12);
@@ -33,10 +35,19 @@ public class CustomPlayerList {
         rankWeightMap.put("ᴅᴇᴀʟᴇʀ", 3);
         rankWeightMap.put("ᴘʀɪꜱᴏɴᴇʀ", 2);
 
-        // Rank color map
-        rankColorMap.put("ᴀᴅᴍɪɴ", Formatting.DARK_RED);
+        // Rank weight map for Survival
+        rankWeightMap.put("ꜱᴇɴɪᴏʀ ᴍᴏᴅ", 12);
+        rankWeightMap.put("ʜᴇʟᴘᴇʀ", 10);
+        rankWeightMap.put("ɪᴍᴍᴏʀᴛᴀʟ", 8);
+        rankWeightMap.put("ᴇᴍᴘᴇʀᴏʀ", 7);
+        rankWeightMap.put("ᴛɪᴛᴀɴ", 6);
+        rankWeightMap.put("ᴄʜᴀᴍᴘɪᴏɴ", 5);
+        rankWeightMap.put("ᴇʟᴅᴇʀ", 4);
+        rankWeightMap.put("ʜᴇʀᴏ", 3);
+        rankWeightMap.put("ᴅᴇꜰᴀᴜʟᴛ", 2);
+
+        // Prison Rank Color pap
         rankColorMap.put("ꜱᴇɴɪᴏʀ ᴍᴏᴅᴇʀᴀᴛᴏʀ", Formatting.BLUE);
-        rankColorMap.put("ᴍᴏᴅᴇʀᴀᴛᴏʀ", Formatting.BLUE);
         rankColorMap.put("ᴛʀɪᴀʟ ᴍᴏᴅᴇʀᴀᴛᴏʀ", Formatting.BLUE);
         rankColorMap.put("THE 1%", Formatting.WHITE);
         rankColorMap.put("ɪʙʟᴏᴄᴋʏ", Formatting.GOLD);
@@ -47,12 +58,30 @@ public class CustomPlayerList {
         rankColorMap.put("ᴄʀɪᴍɪɴᴀʟ", Formatting.LIGHT_PURPLE);
         rankColorMap.put("ᴅᴇᴀʟᴇʀ", Formatting.YELLOW);
         rankColorMap.put("ᴘʀɪꜱᴏɴᴇʀ", Formatting.GRAY);
+
+        // Placeholder for the Survival Rank Color map (customize later)
+        rankColorMap.put("ᴀᴅᴍɪɴ", Formatting.DARK_RED);
+        rankColorMap.put("ꜱᴇɴɪᴏʀ ᴍᴏᴅ", Formatting.DARK_AQUA);
+        rankColorMap.put("ᴍᴏᴅᴇʀᴀᴛᴏʀ", Formatting.DARK_AQUA);
+        rankColorMap.put("ʜᴇʟᴘᴇʀ", Formatting.GREEN);
+        rankColorMap.put("ɪᴍᴍᴏʀᴛᴀʟ", Formatting.DARK_RED);
+        rankColorMap.put("ᴇᴍᴘᴇʀᴏʀ", Formatting.DARK_GREEN);
+        rankColorMap.put("ᴛɪᴛᴀɴ", Formatting.RED);
+        rankColorMap.put("ᴄʜᴀᴍᴘɪᴏɴ", Formatting.YELLOW);
+        rankColorMap.put("ᴇʟᴅᴇʀ", Formatting.GREEN);
+        rankColorMap.put("ʜᴇʀᴏ", Formatting.AQUA);
+        rankColorMap.put("ᴅᴇꜰᴀᴜʟᴛ", Formatting.GRAY);
     }
 
     public void renderPlayerList(DrawContext drawContext) {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client == null || client.player == null || client.getNetworkHandler() == null) {
             return;
+        }
+
+        // Detect game mode, checking only if necessary
+        if (!gameModeDetected || isGameModeChanged()) {
+            detectGameMode();
         }
 
         // Get the player list and compute its hash to detect changes
@@ -96,19 +125,18 @@ public class CustomPlayerList {
         int borderColor = 0xFFFFD700;  // Gold border
         drawContext.drawBorder(centerX - 10, centerY - 10, totalWidth + 20, totalHeight + 20, borderColor);
 
-        String headerText = Formatting.GOLD + "iBlocky Prison";
+        String headerText = Formatting.GOLD + "iBlocky " + currentGameMode;
         String footerText = Formatting.AQUA + "There are " + sortedEntries.size() + " currently online!";
 
-// Draw centered header text inside the HUD
+        // Draw centered header text inside the HUD
         int headerY = centerY + 3;  // Add padding to keep it inside the HUD
         int headerX = centerX + (totalWidth / 2) - (client.textRenderer.getWidth(headerText) / 2);
         drawContext.drawTextWithShadow(client.textRenderer, Text.of(headerText), headerX, headerY, 0xFFFFFF);
 
-// Draw centered footer text inside the HUD
+        // Draw centered footer text inside the HUD
         int footerY = centerY + totalHeight - 15;  // Add extra vertical space here
         int footerX = centerX + (totalWidth / 2) - (client.textRenderer.getWidth(footerText) / 2);
         drawContext.drawTextWithShadow(client.textRenderer, Text.of(footerText), footerX, footerY, 0xFFFFFF);
-
 
         // Begin scaling
         drawContext.getMatrices().push();
@@ -148,25 +176,6 @@ public class CustomPlayerList {
         drawContext.getMatrices().pop();
     }
 
-    public void refreshPlayerList() {
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client == null || client.player == null || client.getNetworkHandler() == null) {
-            return;
-        }
-
-        // Get the latest player list and sort it every time the HUD is triggered
-        Collection<PlayerListEntry> entries = client.getNetworkHandler().getPlayerList();
-
-        sortedEntries = entries.stream()
-                .filter(entry -> hasValidRankPrefix(getPlayerDisplayName(entry)))  // Exclude names without valid prefixes
-                .sorted(Comparator.comparing(this::getPlayerRankWeight).reversed())
-                .collect(Collectors.toList());
-
-        // Debug print to confirm that the refresh happened
-        System.out.println("Refreshing player list. Total players: " + sortedEntries.size());
-    }
-
-
     private List<Integer> calculateColumnWidths(MinecraftClient client, int maxPerColumn) {
         // Calculate the width of each column based on the longest name in that column
         List<Integer> columnWidths = new ArrayList<>();
@@ -196,6 +205,24 @@ public class CustomPlayerList {
         }
 
         return columnWidths;
+    }
+
+    public void refreshPlayerList() {
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (client == null || client.player == null || client.getNetworkHandler() == null) {
+            return;
+        }
+
+        // Get the latest player list and sort it every time the HUD is triggered
+        Collection<PlayerListEntry> entries = client.getNetworkHandler().getPlayerList();
+
+        sortedEntries = entries.stream()
+                .filter(entry -> hasValidRankPrefix(getPlayerDisplayName(entry)))  // Exclude names without valid prefixes
+                .sorted(Comparator.comparing(this::getPlayerRankWeight).reversed())
+                .collect(Collectors.toList());
+
+        // Debug print to confirm that the refresh happened
+        System.out.println("Refreshing player list. Total players: " + sortedEntries.size());
     }
 
     private String getPlayerDisplayName(PlayerListEntry entry) {
@@ -229,4 +256,104 @@ public class CustomPlayerList {
         String playerRank = getPlayerRankFromDisplayName(displayName);
         return rankWeightMap.getOrDefault(playerRank, 1);  // Default weight is 1 if rank not found
     }
+
+    // Game mode detection based on ranks
+    void detectGameMode() {
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (client == null || client.getNetworkHandler() == null) {
+            return;
+        }
+
+        Collection<PlayerListEntry> entries = client.getNetworkHandler().getPlayerList();
+        int prisonRankCount = 0;
+        int survivalRankCount = 0;
+
+        for (PlayerListEntry entry : entries) {
+            String playerDisplayName = getPlayerDisplayName(entry);
+            String playerRank = getPlayerRankFromDisplayName(playerDisplayName);
+
+            // Exclude checking for the common ranks 'ᴀᴅᴍɪɴ' and 'ɪʙʟᴏᴄᴋʏ'
+            if (isPrisonRank(playerRank)) {
+                prisonRankCount++;
+            } else if (isSurvivalRank(playerRank)) {
+                survivalRankCount++;
+            }
+        }
+
+        // Determine the game mode based on the rank counts
+        if (prisonRankCount > survivalRankCount) {
+            currentGameMode = "Prison";
+        } else if (survivalRankCount > prisonRankCount) {
+            currentGameMode = "Survival";
+        } else {
+            currentGameMode = "Unknown";  // If no conclusive ranks found
+        }
+
+        // Set flag to true after detecting
+        gameModeDetected = true;
+
+        System.out.println("Detected Game Mode: " + currentGameMode);  // For debugging
+    }
+
+    private boolean isPrisonRank(String rank) {
+        return !rank.equals("ᴀᴅᴍɪɴ") && !rank.equals("ɪʙʟᴏᴄᴋʏ") && (
+                rank.equals("ꜱᴇɴɪᴏʀ ᴍᴏᴅᴇʀᴀᴛᴏʀ") || rank.equals("ᴍᴏᴅᴇʀᴀᴛᴏʀ") ||
+                        rank.equals("ᴛʀɪᴀʟ ᴍᴏᴅᴇʀᴀᴛᴏʀ") || rank.equals("THE 1%") || rank.equals("ᴋɪɴɢᴘɪɴ") ||
+                        rank.equals("ɢᴀɴɢꜱᴛᴇʀ") || rank.equals("ᴛʜᴜɢ") || rank.equals("ʜɪᴛᴍᴀɴ") ||
+                        rank.equals("ᴄʀɪᴍɪɴᴀʟ") || rank.equals("ᴅᴇᴀʟᴇʀ") || rank.equals("ᴘʀɪꜱᴏɴᴇʀ"));
+    }
+
+    private boolean isSurvivalRank(String rank) {
+        return !rank.equals("ᴀᴅᴍɪɴ") && !rank.equals("ɪʙʟᴏᴄᴋʏ") && (
+                rank.equals("ꜱᴇɴɪᴏʀ ᴍᴏᴅ") || rank.equals("ᴍᴏᴅᴇʀᴀᴛᴏʀ") || rank.equals("ʜᴇʟᴘᴇʀ") ||
+                        rank.equals("ɪᴍᴏʀᴛᴀʟ") || rank.equals("ᴇᴍᴘᴇʀᴏʀ") || rank.equals("ᴛɪᴛᴀɴ") ||
+                        rank.equals("ᴄʜᴀᴍᴘɪᴏɴ") || rank.equals("ᴇʟᴅᴇʀ") || rank.equals("ʜᴇʀᴏ") || rank.equals("ᴅᴇꜰᴀᴜʟᴛ"));
+    }
+
+    public boolean isGameModeChanged() {
+        String previousGameMode = currentGameMode;
+        String detectedMode = detectGameModeWithoutUpdatingFlag();  // Detect game mode but don’t set it yet
+        return !detectedMode.equals(previousGameMode);
+    }
+
+    private String detectGameModeWithoutUpdatingFlag() {
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (client == null || client.getNetworkHandler() == null) {
+            return currentGameMode;
+        }
+
+        Collection<PlayerListEntry> entries = client.getNetworkHandler().getPlayerList();
+        int prisonRankCount = 0;
+        int survivalRankCount = 0;
+
+        for (PlayerListEntry entry : entries) {
+            String playerDisplayName = getPlayerDisplayName(entry);
+            String playerRank = getPlayerRankFromDisplayName(playerDisplayName);
+
+            // Check ranks, excluding common ones like 'ᴀᴅᴍɪɴ' and 'ɪʙʟᴏᴄᴋʏ'
+            if (isPrisonRank(playerRank)) {
+                prisonRankCount++;
+            } else if (isSurvivalRank(playerRank)) {
+                survivalRankCount++;
+            }
+        }
+
+        if (prisonRankCount > survivalRankCount) {
+            return "Prison";
+        } else if (survivalRankCount > prisonRankCount) {
+            return "Survival";
+        } else {
+            return "Unknown";
+        }
+    }
+
+    public boolean isGameModeDetected() {
+        return gameModeDetected;
+    }
+
+    public String getCurrentGameMode() {
+        return currentGameMode;
+    }
+
+
 }

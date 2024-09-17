@@ -32,12 +32,16 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
     private static KeyBinding showPlayerListKeyBinding; // Keybind for player list
     private static KeyBinding toggleInstructionsKeyBinding;
     private static KeyBinding testPickaxeDataKeyBinding;
+    private static KeyBinding enchantLeftKeyBinding; // New key bindings for EnchantHUD
+    private static KeyBinding enchantRightKeyBinding;
     private static BoosterConfig config;
-    private static BoosterStatusWindow boosterStatusWindow;
-    private static CustomPlayerList customPlayerList;  // Custom player list instance
+    static BoosterStatusWindow boosterStatusWindow;
     private static boolean isHudVisible = true;
+    private static CustomPlayerList customPlayerList;  // Custom player list instance
     private static boolean showPlayerList = false;  // Flag for toggling player list visibility
+    private static EnchantHUD enchantHUD;
     private static SaleSummaryManager saleSummaryManager;
+    private boolean gameModeChecked = false;
 
     private static final Pattern TOKEN_BOOSTER_PATTERN = Pattern.compile(
             "\\s-\\sTokens\\s\\((\\d+(\\.\\d+)?)x\\)\\s\\((\\d+d\\s)?(\\d+h\\s)?(\\d+m\\s)?(\\d+s\\s)?remaining\\)",
@@ -56,11 +60,8 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
     private ScheduledFuture<?> refreshTask;
 
     private static iBlockyBoosterNotificationClient instance;
-    public static BoosterStatusWindow getBoosterStatusWindow() {
-        return boosterStatusWindow;
-    }
 
-    private static final Map<String, String> availableEnchants = new HashMap<>();
+    static final Map<String, String> availableEnchants = new HashMap<>();
     static {
         availableEnchants.put("Locksmith", "Locksmith");
         availableEnchants.put("Jurassic", "Jurassic");
@@ -95,11 +96,39 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
         customPlayerList = new CustomPlayerList();
 
         registerJoinEvent();
+        HubCommand.register();
 
         // Register the HUD rendering after key bindings are set
         HudRenderCallback.EVENT.register((drawContext, tickDelta) -> {
-            if (showPlayerList) {  // Only render if the player list toggle is on
-                customPlayerList.renderPlayerList(drawContext);  // Pass the drawContext here
+            if (showPlayerList) {
+                customPlayerList.renderPlayerList(drawContext);
+            }
+        });
+
+        ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
+            RankSetCommand.register(dispatcher);
+            SaleSummaryCommand.register(dispatcher);
+        });
+
+        ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            // Only proceed if the player is on the correct server
+            if (isCorrectServer() && !gameModeChecked) {
+                customPlayerList.refreshPlayerList();
+                customPlayerList.detectGameMode();
+
+                if (isCorrectGameMode()) {
+                    if (!hudInitialized) {
+                        System.out.println("Correct game mode detected, initializing HUD.");
+                        initializeHUD();
+                    }
+                } else {
+                    if (hudInitialized) {
+                        System.out.println("Switching to unsupported game mode, hiding HUD.");
+                        resetHUD();
+                    }
+                }
+
+                gameModeChecked = true;
             }
         });
     }
@@ -119,50 +148,73 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
                 config = BoosterConfig.load();
             }
 
-            // Check if connected to the correct server
-            if (isCorrectServer()) {
-                System.out.println("Connected to the correct server, initializing mod.");
+            // Add a short delay to ensure players are loaded
+            scheduler.schedule(() -> {
+                if (isCorrectServer()) {
+                    System.out.println("Connected to the correct server, checking for game mode.");
 
-                // Only initialize HUD and related components if not already initialized
-                if (!hudInitialized) {
-                    System.out.println("HUD is being initialized for the first time.");
-                    hudInitialized = true; // Set flag to prevent further initializations
+                    customPlayerList.refreshPlayerList(); // Ensure player list is updated
+                    customPlayerList.detectGameMode(); // Detect the game mode
 
-                    // Initialize key mod components only once per session
-                    startFetchingDisplayName();
-                    setHudVisible(true); // Set HUD visible only on the correct server
-
-                    saleSummaryManager = new SaleSummaryManager();
-                    BackpackSpaceTracker.init();
-                    HudRenderCallback.EVENT.register(boosterStatusWindow);
-                    registerMessageListeners();
-                    registerMouseEvents();
-                    registerLogoutEvent(); // Ensure logout event is registered properly
-                    registerBoosterScheduler();
-                    HubCommand.register();
-
-                    // Register commands
-                    ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> RankSetCommand.register(dispatcher));
-                    ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> SaleSummaryCommand.register(dispatcher));
-
-                    // Handle closing of the booster status window
-                    ClientTickEvents.END_CLIENT_TICK.register(client1 -> {
-                        if (MinecraftClient.getInstance().currentScreen == null) {
-                            boosterStatusWindow.handleScreenClose();
+                    if (isCorrectGameMode()) {
+                        if (!hudInitialized) {
+                            initializeHUD();  // Separated HUD initialization logic
+                        } else {
+                            System.out.println("HUD is already initialized, skipping re-initialization.");
+                            setHudVisible(true);  // Only make it visible if it's already initialized.
                         }
-                    });
+                    } else {
+                        if (hudInitialized) {
+                            System.out.println("Switching to unsupported game mode, hiding HUD.");
+                            setHudVisible(false);  // Only hide it, don't reset or unregister callbacks.
+                        }
+                    }
+                    gameModeChecked = true;  // Mark game mode as checked after joining
                 } else {
-                    System.out.println("HUD is already initialized, skipping re-initialization.");
+                    System.out.println("Mod is not initialized: Connected to a non-supported server.");
+                    setHudVisible(false); // Hide HUD when not on a supported server, don't reset.
                 }
-            } else {
-                // If the server is not correct, ensure the HUD and player list are hidden
-                System.out.println("Mod is not initialized: Connected to a non-supported server.");
-                setHudVisible(false);  // Hide the HUD if connected to a non-supported server
-                showPlayerList = false; // Ensure player list is hidden
-            }
+            }, 2, TimeUnit.SECONDS); // Delay of 2 seconds (adjust as necessary)
         });
     }
 
+    private void initializeHUD() {
+        System.out.println("HUD is being initialized for the first time.");
+
+        if (!hudInitialized) {
+            hudInitialized = true;
+            setHudVisible(true);
+
+            // Register HudRenderCallback if it's not already initialized
+            HudRenderCallback.EVENT.register(boosterStatusWindow);
+
+            // Initialize and register EnchantHUD
+            enchantHUD = new EnchantHUD(); // Proper initialization of EnchantHUD
+            HudRenderCallback.EVENT.register(enchantHUD); // Register HUD rendering for EnchantHUD
+
+            // Initialize other components
+            PickaxeDataFetcher.readPickaxeComponentData();
+            saleSummaryManager = new SaleSummaryManager();
+            BackpackSpaceTracker.init();
+            registerMessageListeners();
+            registerMouseEvents();
+            registerLogoutEvent();
+            registerBoosterScheduler();
+
+            // Handle closing the booster window when the screen is closed
+            ClientTickEvents.END_CLIENT_TICK.register(client -> {
+                if (MinecraftClient.getInstance().currentScreen == null) {
+                    boosterStatusWindow.handleScreenClose();
+                }
+            });
+        }
+    }
+
+    private void resetHUD() {
+        System.out.println("Resetting HUD: Hiding components but not reinitializing.");
+        setHudVisible(false);
+        showPlayerList = false;
+    }
 
     private void registerLogoutEvent() {
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
@@ -170,7 +222,6 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
             boosterStatusWindow.clearBoosterInfo();
             setHudVisible(false);  // Hide the HUD upon disconnecting
             showPlayerList = false; // Reset player list visibility as well
-            System.out.println("Disconnected from server. HUD and player list are now hidden.");
         });
     }
 
@@ -187,6 +238,7 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
             if (isHudVisible) {
                 sendBoosterCommand();
                 fetchAndUpdateBalance();
+                fetchAndLogPlayerPrefix();
             }
         }, 0, BOOSTER_COMMAND_INTERVAL, TimeUnit.SECONDS);
     }
@@ -198,6 +250,10 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
             return "play.iblocky.net".equalsIgnoreCase(serverAddress) || "mc.iblocky.net".equalsIgnoreCase(serverAddress);
         }
         return false;
+    }
+
+    public boolean isCorrectGameMode() {
+        return "Prison".equals(customPlayerList.getCurrentGameMode());  // Check if the current game mode is "Prison"
     }
 
     public void fetchAndUpdateBalance() {
@@ -218,7 +274,7 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
     void fetchAndLogPlayerPrefix() {
         MinecraftClient client = MinecraftClient.getInstance();
 
-        if (!isCorrectServer()) {
+        if (!isCorrectServer() && isCorrectGameMode()) {
             return;
         }
 
@@ -344,20 +400,23 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
             String enchantName = levelUpMatcher.group(1).trim();
             String amount = levelUpMatcher.group(2).trim();
             fetchAndUpdateBalance();
+            PickaxeDataFetcher.readPickaxeComponentData();
         }
     }
 
     private void registerMouseEvents() {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            if (client.currentScreen != null) {
+            if (MinecraftClient.getInstance().currentScreen != null) {
                 double mouseX = client.mouse.getX() / client.getWindow().getScaleFactor();
                 double mouseY = client.mouse.getY() / client.getWindow().getScaleFactor();
 
                 if (GLFW.glfwGetMouseButton(client.getWindow().getHandle(), GLFW.GLFW_MOUSE_BUTTON_1) == GLFW.GLFW_PRESS) {
                     boosterStatusWindow.handleMousePress(mouseX, mouseY);
-                } else {
+                } else if (GLFW.glfwGetMouseButton(client.getWindow().getHandle(), GLFW.GLFW_MOUSE_BUTTON_1) == GLFW.GLFW_RELEASE) {
                     boosterStatusWindow.handleMouseRelease(mouseX, mouseY);
                 }
+
+                boosterStatusWindow.onMouseMove(mouseX, mouseY);  // Always track mouse move
             }
         });
     }
@@ -367,23 +426,27 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
         toggleHudKeyBinding = new KeyBinding("key.boosternoti.toggleHud", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_H, "category.boosternoti.general");
         showPlayerListKeyBinding = new KeyBinding("key.boosternoti.showPlayerList", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_O, "category.boosternoti.general");
         toggleInstructionsKeyBinding = new KeyBinding("key.boosternoti.toggleInstructions", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_N, "category.boosternoti.general");
-        testPickaxeDataKeyBinding = new KeyBinding("key.iblockybooster.testPickaxeData",InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_G, "category.boosternoti.general");
+        testPickaxeDataKeyBinding = new KeyBinding("key.iblockybooster.testPickaxeData", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_G, "category.boosternoti.general");
+        enchantLeftKeyBinding = new KeyBinding("key.enchant_hud.left", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_LEFT, "category.enchant_hud");
+        enchantRightKeyBinding = new KeyBinding("key.enchant_hud.right", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_RIGHT, "category.enchant_hud");
 
         KeyBindingHelper.registerKeyBinding(boosterKeyBinding);
         KeyBindingHelper.registerKeyBinding(toggleHudKeyBinding);
         KeyBindingHelper.registerKeyBinding(showPlayerListKeyBinding);
         KeyBindingHelper.registerKeyBinding(toggleInstructionsKeyBinding);
         KeyBindingHelper.registerKeyBinding(testPickaxeDataKeyBinding);
+        KeyBindingHelper.registerKeyBinding(enchantLeftKeyBinding);
+        KeyBindingHelper.registerKeyBinding(enchantRightKeyBinding);
 
         // Handle key events during the client tick
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            if (boosterKeyBinding.wasPressed() && isCorrectServer()) {
+            if (boosterKeyBinding.wasPressed() && isCorrectServer() && isCorrectGameMode()) {
                 sendBoosterCommand();
                 fetchAndLogPlayerPrefix();
                 fetchAndUpdateBalance();
             }
 
-            if (toggleHudKeyBinding.wasPressed() && isCorrectServer()) {
+            if (toggleHudKeyBinding.wasPressed() && isCorrectServer() && isCorrectGameMode()) {
                 toggleHudVisibility(!isHudVisible);
                 fetchAndUpdateBalance();
             }
@@ -400,15 +463,22 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
                 }
             }
 
-            if (toggleInstructionsKeyBinding.wasPressed()) {
-                boosterStatusWindow.toggleInstructions(); // Trigger instructions toggle
+            if (enchantLeftKeyBinding.wasPressed() && isCorrectServer() && isCorrectGameMode()) {
+                enchantHUD.cycleLeft();  // Cycle left through enchants
             }
 
-            if (testPickaxeDataKeyBinding.wasPressed()) {
+            if (enchantRightKeyBinding.wasPressed() && isCorrectServer() && isCorrectGameMode()) {
+                enchantHUD.cycleRight();  // Cycle right through enchants
+            }
+
+            if (toggleInstructionsKeyBinding.wasPressed() && isCorrectServer() && isCorrectGameMode()) {
+                boosterStatusWindow.toggleInstructions();
+            }
+
+            if (testPickaxeDataKeyBinding.wasPressed() && isCorrectServer() && isCorrectGameMode()) {
                 System.out.println("Pickaxe Data Fetcher key pressed.");
-                runPickaxeDataFetcher(); // Run the Pickaxe Data Fetcher when the key is pressed
+                runPickaxeDataFetcher();
             }
-
         });
     }
 
@@ -418,7 +488,13 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
             refreshTask = refreshScheduler.scheduleAtFixedRate(() -> {
                 if (showPlayerList) {
                     customPlayerList.refreshPlayerList();  // Refresh the player list
-                    System.out.println("Player list is being refreshed.");
+
+                    // Check and rectify the game mode if necessary
+                    if (!customPlayerList.isGameModeDetected() || customPlayerList.isGameModeChanged()) {
+                        customPlayerList.detectGameMode();  // Re-run game mode detection if changed
+                    }
+
+                    System.out.println("Player list is being refreshed with game mode: " + customPlayerList.getCurrentGameMode());
                 }
             }, 0, 1, TimeUnit.SECONDS);
         }
@@ -440,7 +516,7 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
     }
 
     public static boolean isHudVisible() {
-        return isHudVisible;
+        return !isHudVisible;
     }
 
     private void sendBoosterCommand() {

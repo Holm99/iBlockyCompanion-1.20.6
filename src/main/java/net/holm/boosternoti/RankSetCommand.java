@@ -16,10 +16,26 @@ public class RankSetCommand {
 
     public static void register(CommandDispatcher<FabricClientCommandSource> dispatcher) {
         dispatcher.register(literal("rankset")
-                .then(literal("clear")  // Explicitly handle "clear" command first
+                // Base command execution without arguments
+                .executes(context -> {
+                    // Check if the player is on the correct server and game mode
+                    if (!iBlockyBoosterNotificationClient.isCorrectServer() || !iBlockyBoosterNotificationClient.getInstance().isCorrectGameMode()) {
+                        MinecraftClient.getInstance().player.sendMessage(Text.of("This command is only available on the correct server and game mode."), false);
+                        return 0;  // Command fails
+                    }
+                    // Inform the user they need to provide an argument
+                    MinecraftClient.getInstance().player.sendMessage(Text.of("Usage: /rankset <rank> or /rankset clear"), false);
+                    return 1;  // Success, but just showing usage information
+                })
+                .then(literal("clear")  // Explicitly handle "clear" command
                         .executes(context -> {
-                            MinecraftClient client = MinecraftClient.getInstance();
+                            // Check if the player is on the correct server and game mode
+                            if (!iBlockyBoosterNotificationClient.isCorrectServer() || !iBlockyBoosterNotificationClient.getInstance().isCorrectGameMode()) {
+                                MinecraftClient.getInstance().player.sendMessage(Text.of("This command is only available on the correct server and game mode."), false);
+                                return 0;  // Command fails
+                            }
 
+                            MinecraftClient client = MinecraftClient.getInstance();
                             if (client != null && client.player != null) {
                                 UUID playerUUID = client.player.getUuid();
                                 BoosterConfig config = BoosterConfig.load();
@@ -35,7 +51,7 @@ public class RankSetCommand {
                             }
                             return 0;
                         }))
-                .then(argument("rank", StringArgumentType.greedyString())  // Now handle "rank" argument separately
+                .then(argument("rank", StringArgumentType.greedyString())  // Handle "rank" argument separately
                         .suggests((context, builder) -> {
                             // Suggest ranks from the aliasMap, sorted alphabetically
                             Map<String, String> aliasMap = SellBoostCalculator.getAliasMap();
@@ -45,9 +61,14 @@ public class RankSetCommand {
                             return builder.buildFuture();
                         })
                         .executes(context -> {
+                            // Check if the player is on the correct server and game mode
+                            if (!iBlockyBoosterNotificationClient.isCorrectServer() || !iBlockyBoosterNotificationClient.getInstance().isCorrectGameMode()) {
+                                MinecraftClient.getInstance().player.sendMessage(Text.of("This command is only available on the correct server and game mode."), false);
+                                return 0;  // Command fails
+                            }
+
                             String rank = StringArgumentType.getString(context, "rank");
                             MinecraftClient client = MinecraftClient.getInstance();
-
                             if (client != null && client.player != null) {
                                 UUID playerUUID = client.player.getUuid();
 

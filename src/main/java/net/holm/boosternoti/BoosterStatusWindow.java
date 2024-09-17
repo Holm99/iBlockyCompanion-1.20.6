@@ -7,10 +7,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.client.option.KeyBinding;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.minecraft.client.util.InputUtil;
-import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -264,7 +261,7 @@ public class BoosterStatusWindow implements HudRenderCallback {
 
     @Override
     public void onHudRender(DrawContext drawContext, float tickDelta) {
-        if (!isGameActive() || !iBlockyBoosterNotificationClient.isHudVisible()) {
+        if (!isGameActive() || iBlockyBoosterNotificationClient.isHudVisible()) {
             return;
         }
 
@@ -387,7 +384,7 @@ public class BoosterStatusWindow implements HudRenderCallback {
         int padding = 5;
         int bannerHeight = 15; // Fixed banner height for close button positioning
 
-        // Calculate the window width dynamically based on whether instructions are shown or not
+        // Recalculate the maximum width of all the elements to ensure correct hitbox calculation
         int maxTextWidth = Math.max(
                 Math.max(client.textRenderer.getWidth(sellBoostInfo), client.textRenderer.getWidth(timeRemaining)),
                 Math.max(client.textRenderer.getWidth(richBoosterTimeRemaining), client.textRenderer.getWidth(backpackTimeInfo))
@@ -402,14 +399,14 @@ public class BoosterStatusWindow implements HudRenderCallback {
             maxTextWidth = Math.max(maxTextWidth, instructionsWidth);
         }
 
-        int windowWidth = maxTextWidth + 2 * padding; // Total window width
+        int windowWidth = maxTextWidth + 2 * padding; // Recalculate window width dynamically
 
-        // The [X] button is always at the far right of the banner
+        // The [X] button is always at the far right of the banner, so calculate the hitbox dynamically
         String closeButton = "[X]";
         int closeButtonWidth = client.textRenderer.getWidth(closeButton);
-        int closeButtonXStart = windowX + windowWidth - closeButtonWidth - padding; // Positioned at the far right with padding
+        int closeButtonXStart = windowX + windowWidth - closeButtonWidth - padding; // Always position at the far right with padding
 
-        // Define the hitbox for the close button
+        // Define the hitbox for the close button based on current window dimensions
         if (mouseX >= closeButtonXStart && mouseX <= closeButtonXStart + closeButtonWidth
                 && mouseY >= windowY && mouseY <= windowY + bannerHeight) {
             isCloseButtonHovered = true;
@@ -433,7 +430,7 @@ public class BoosterStatusWindow implements HudRenderCallback {
         int padding = 5;
         int bannerHeight = 15; // Fixed banner height for close button positioning
 
-        // Calculate the window width dynamically based on whether instructions are shown or not
+        // Recalculate the maximum width of all the elements to ensure correct hitbox calculation
         int maxTextWidth = Math.max(
                 Math.max(client.textRenderer.getWidth(sellBoostInfo), client.textRenderer.getWidth(timeRemaining)),
                 Math.max(client.textRenderer.getWidth(richBoosterTimeRemaining), client.textRenderer.getWidth(backpackTimeInfo))
@@ -448,12 +445,12 @@ public class BoosterStatusWindow implements HudRenderCallback {
             maxTextWidth = Math.max(maxTextWidth, instructionsWidth);
         }
 
-        int windowWidth = maxTextWidth + 2 * padding; // Total window width
+        int windowWidth = maxTextWidth + 2 * padding; // Recalculate window width dynamically
 
-        // The [X] button is always at the far right of the banner
+        // The [X] button is always at the far right of the banner, so calculate the hitbox dynamically
         String closeButton = "[X]";
         int closeButtonWidth = client.textRenderer.getWidth(closeButton);
-        int closeButtonXStart = windowX + windowWidth - closeButtonWidth - padding; // Positioned at the far right with padding
+        int closeButtonXStart = windowX + windowWidth - closeButtonWidth - padding; // Always position at the far right with padding
 
         // Check if the close button was clicked
         if (isCloseButtonHovered && mouseX >= closeButtonXStart && mouseX <= closeButtonXStart + closeButtonWidth
@@ -463,8 +460,9 @@ public class BoosterStatusWindow implements HudRenderCallback {
             setHudVisible(false);  // Hide the HUD in the BoosterStatusWindow
         }
 
-        // Save window position only if dragging was active and the window was moved
+        // Ensure the window stays within screen bounds if dragging was active and the window was moved
         if (isDragging && hasDragged) {
+            ensureWindowWithinScreen(client, windowWidth, bannerHeight + (6 * 15)); // Adjust based on dynamic content
             saveWindowPosition();
             LOGGER.info("Window position saved after dragging");
         }
@@ -472,20 +470,15 @@ public class BoosterStatusWindow implements HudRenderCallback {
         isDragging = false; // Stop dragging
     }
 
-    public void onMouseMove(double mouseX, double mouseY) {
-        // Only update the window position if dragging is active
-        if (isDragging) {
-            MinecraftClient client = MinecraftClient.getInstance();
 
-            // Move the window to follow the cursor
-            windowX = MathHelper.floor(mouseX - mouseXOffset);
-            windowY = MathHelper.floor(mouseY - mouseYOffset);
+
+    public void onMouseMove(double mouseX, double mouseY) {
+        if (isDragging) {
+            windowX = (int) (mouseX - mouseXOffset);
+            windowY = (int) (mouseY - mouseYOffset);
 
             // Mark that the window has been moved
             hasDragged = true;
-
-            // Ensure the window stays within the screen bounds
-            ensureWindowWithinScreen(client, windowX, windowY);
 
             LOGGER.info("Window dragged to new position: X={}, Y={}", windowX, windowY);
         }
