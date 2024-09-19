@@ -222,7 +222,6 @@ public class CustomPlayerList {
                 .collect(Collectors.toList());
 
         // Debug print to confirm that the refresh happened
-        System.out.println("Refreshing player list. Total players: " + sortedEntries.size());
     }
 
     private String getPlayerDisplayName(PlayerListEntry entry) {
@@ -291,8 +290,6 @@ public class CustomPlayerList {
 
         // Set flag to true after detecting
         gameModeDetected = true;
-
-        System.out.println("Detected Game Mode: " + currentGameMode);  // For debugging
     }
 
     private boolean isPrisonRank(String rank) {

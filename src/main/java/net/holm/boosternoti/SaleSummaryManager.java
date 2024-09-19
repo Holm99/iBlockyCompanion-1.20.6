@@ -19,7 +19,6 @@ public class SaleSummaryManager {
     // Add a sale amount to the running total
     public void addSale(long saleAmount) {
         totalSales += saleAmount;
-        // System.out.println("Sale added: " + saleAmount + ". Updated total sales: " + totalSales);
     }
 
     // Get the current total sales
@@ -30,6 +29,5 @@ public class SaleSummaryManager {
     // Clear the total sales (reset to zero)
     public void clearSales() {
         totalSales = 0;
-        // System.out.println("Cleared total sales.");
     }
 }

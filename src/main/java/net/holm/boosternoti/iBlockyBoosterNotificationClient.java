@@ -17,6 +17,8 @@ import net.minecraft.client.network.PlayerListEntry;
 import com.mojang.authlib.GameProfile;
 import org.lwjgl.glfw.GLFW;
 
+import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.Executors;
@@ -28,18 +30,19 @@ import java.util.regex.Pattern;
 
 public class iBlockyBoosterNotificationClient implements ClientModInitializer {
     private static KeyBinding boosterKeyBinding;
-    private static KeyBinding toggleHudKeyBinding;
+    private static KeyBinding toggleBoosterHudKeyBinding;
+    private static KeyBinding toggleEnchantHudKeyBinding;
     private static KeyBinding showPlayerListKeyBinding; // Keybind for player list
     private static KeyBinding toggleInstructionsKeyBinding;
-    private static KeyBinding testPickaxeDataKeyBinding;
     private static KeyBinding enchantLeftKeyBinding; // New key bindings for EnchantHUD
     private static KeyBinding enchantRightKeyBinding;
     private static BoosterConfig config;
     static BoosterStatusWindow boosterStatusWindow;
+    private static EnchantHUD enchantHUD;
     private static boolean isHudVisible = true;
+    private boolean hudInitialized = false;
     private static CustomPlayerList customPlayerList;  // Custom player list instance
     private static boolean showPlayerList = false;  // Flag for toggling player list visibility
-    private static EnchantHUD enchantHUD;
     private static SaleSummaryManager saleSummaryManager;
     private boolean gameModeChecked = false;
 
@@ -52,13 +55,12 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
     private static final Pattern PRESTIGED_ENCHANT_PATTERN = Pattern.compile("You prestiged ([A-Za-z ]+) to (\\d+)");
     private static final Pattern PURCHASED_LEVELS_PATTERN = Pattern.compile("Purchased (\\d+) levels of ([A-Za-z ]+)");
     private static final Pattern LEVELED_UP_PATTERN = Pattern.compile("You leveled up ([A-Za-z ]+) to level (\\d+) for ([\\d,.]+) tokens!");
-    private boolean hudInitialized = false; // Add a flag to check if the HUD has already been initialized
 
     private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private static final long BOOSTER_COMMAND_INTERVAL = 20 * 60; // 20 minutes in seconds
     private final ScheduledExecutorService boosterScheduler = Executors.newScheduledThreadPool(1);
     private ScheduledFuture<?> boosterTask;
-    private final ScheduledExecutorService refreshScheduler = Executors.newScheduledThreadPool(1);  // Renamed to avoid conflict
+    private final ScheduledExecutorService refreshScheduler = Executors.newScheduledThreadPool(1);
     private ScheduledFuture<?> refreshTask;
 
     private static iBlockyBoosterNotificationClient instance;
@@ -94,7 +96,12 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
         // Ensure key bindings are registered early
         registerKeyBindings();
 
-        boosterStatusWindow = new BoosterStatusWindow(config, boosterKeyBinding, toggleHudKeyBinding, showPlayerListKeyBinding, toggleInstructionsKeyBinding);
+        boosterStatusWindow = new BoosterStatusWindow(config, boosterKeyBinding, toggleBoosterHudKeyBinding, toggleEnchantHudKeyBinding, showPlayerListKeyBinding, toggleInstructionsKeyBinding);
+        try {
+            enchantHUD = new EnchantHUD(config); // Initialize the EnchantHUD here
+        } catch (GeneralSecurityException | IOException e) {
+            throw new RuntimeException(e);
+        }
         customPlayerList = new CustomPlayerList();
 
         registerJoinEvent();
@@ -120,12 +127,10 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
 
                 if (isCorrectGameMode()) {
                     if (!hudInitialized) {
-                        System.out.println("Correct game mode detected, initializing HUD.");
                         initializeHUD();
                     }
                 } else {
                     if (hudInitialized) {
-                        System.out.println("Switching to unsupported game mode, hiding HUD.");
                         resetHUD();
                     }
                 }
@@ -135,66 +140,51 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
         });
     }
 
-    private void runPickaxeDataFetcher() {
-        // Call the method to fetch and read pickaxe data
-        PickaxeDataFetcher.readPickaxeComponentData();
-
-        // You can add additional checks or processing here if needed
-        // The component data will be printed by the method itself
-    }
-
     public void registerJoinEvent() {
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
-            // Load config if not already loaded
             if (config == null) {
                 config = BoosterConfig.load();
             }
 
-            // Add a short delay to ensure players are loaded
             scheduler.schedule(() -> {
                 if (isCorrectServer()) {
-                    System.out.println("Connected to the correct server, checking for game mode.");
-
-                    customPlayerList.refreshPlayerList(); // Ensure player list is updated
-                    customPlayerList.detectGameMode(); // Detect the game mode
+                    customPlayerList.refreshPlayerList();
+                    customPlayerList.detectGameMode();
 
                     if (isCorrectGameMode()) {
                         if (!hudInitialized) {
-                            initializeHUD();  // Separated HUD initialization logic
+                            initializeHUD();
                         } else {
-                            System.out.println("HUD is already initialized, skipping re-initialization.");
-                            setHudVisible(true);  // Only make it visible if it's already initialized.
+                            boosterStatusWindow.setHudVisible(true);  // Show booster window
+                            enchantHUD.setHudVisible(true);  // Show enchant HUD
+                            GoogleSheetsAPIIntegration();
+                            PickaxeDataFetcher.readPickaxeComponentData();
+                            enchantHUD.updateEnchantNames();
                         }
                     } else {
                         if (hudInitialized) {
-                            System.out.println("Switching to unsupported game mode, hiding HUD.");
-                            setHudVisible(false);  // Only hide it, don't reset or unregister callbacks.
+                            boosterStatusWindow.setHudVisible(false); // Hide booster window
+                            enchantHUD.setHudVisible(false);  // Hide enchant HUD
                         }
                     }
-                    gameModeChecked = true;  // Mark game mode as checked after joining
+                    gameModeChecked = true;
                 } else {
-                    System.out.println("Mod is not initialized: Connected to a non-supported server.");
-                    setHudVisible(false); // Hide HUD when not on a supported server, don't reset.
+                    boosterStatusWindow.setHudVisible(false); // Hide booster window
+                    enchantHUD.setHudVisible(false);  // Hide enchant HUD
                 }
-            }, 2, TimeUnit.SECONDS); // Delay of 2 seconds (adjust as necessary)
+            }, 2, TimeUnit.SECONDS);
         });
     }
 
     private void initializeHUD() {
-        System.out.println("HUD is being initialized for the first time.");
-
         if (!hudInitialized) {
             hudInitialized = true;
-            setHudVisible(true);
+            boosterStatusWindow.setHudVisible(true);
+            enchantHUD.setHudVisible(true);
 
-            // Register HudRenderCallback if it's not already initialized
             HudRenderCallback.EVENT.register(boosterStatusWindow);
+            HudRenderCallback.EVENT.register(enchantHUD);
 
-            // Initialize and register EnchantHUD
-            enchantHUD = new EnchantHUD(config); // Pass config to EnchantHUD
-            HudRenderCallback.EVENT.register(enchantHUD); // Register HUD rendering for EnchantHUD
-
-            // Initialize other components
             PickaxeDataFetcher.readPickaxeComponentData();
             enchantHUD.updateEnchantNames();
             saleSummaryManager = new SaleSummaryManager();
@@ -204,27 +194,66 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
             registerLogoutEvent();
             registerBoosterScheduler();
 
-            // Handle closing the booster window when the screen is closed
             ClientTickEvents.END_CLIENT_TICK.register(client -> {
                 if (MinecraftClient.getInstance().currentScreen == null) {
-                    boosterStatusWindow.handleScreenClose();
+                    if (boosterStatusWindow != null) {
+                        boosterStatusWindow.handleScreenClose();
+                    }
+                    if (enchantHUD != null) {
+                        enchantHUD.handleScreenClose();  // Assuming this method exists or you can implement it
+                    }
                 }
             });
+        }
+
+        GoogleSheetsAPIIntegration();
+        refreshGoogleSheetsData();
+    }
+
+    public void GoogleSheetsAPIIntegration() {
+        try {
+            GoogleSheetRangeFetcher googleSheetRangeFetcher = new GoogleSheetRangeFetcher();
+            googleSheetRangeFetcher.GoogleSheetsAPI();
+        } catch (IOException | GeneralSecurityException e) {
+            System.err.println("Failed to initialize Google Sheets API: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private void refreshGoogleSheetsData() {
+        try {
+            // Get the Google Sheet Range Fetcher instance and reload the enchant costs
+            GoogleSheetRangeFetcher googleSheetRangeFetcher = GoogleSheetRangeFetcher.getInstance();
+            googleSheetRangeFetcher.loadEnchantCosts();  // Reload the enchant costs
+
+            // Update the enchant names in EnchantHUD after refreshing the cache
+            enchantHUD.updateEnchantNames();
+        } catch (IOException | GeneralSecurityException e) {
+            System.err.println("Failed to refresh Google Sheets data: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
     private void resetHUD() {
-        System.out.println("Resetting HUD: Hiding components but not reinitializing.");
-        setHudVisible(false);
+        if (boosterStatusWindow != null) {
+            boosterStatusWindow.setHudVisible(false);
+        }
+        if (enchantHUD != null) {
+            enchantHUD.setHudVisible(false);
+        }
         showPlayerList = false;
     }
 
     private void registerLogoutEvent() {
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
-            // Clear booster info and hide HUD when disconnected
-            boosterStatusWindow.clearBoosterInfo();
-            setHudVisible(false);  // Hide the HUD upon disconnecting
-            showPlayerList = false; // Reset player list visibility as well
+            if (boosterStatusWindow != null) {
+                boosterStatusWindow.clearBoosterInfo();
+                boosterStatusWindow.setHudVisible(false);
+            }
+            if (enchantHUD != null) {
+                enchantHUD.setHudVisible(false);
+            }
+            showPlayerList = false;
         });
     }
 
@@ -256,7 +285,7 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
     }
 
     public boolean isCorrectGameMode() {
-        return "Prison".equals(customPlayerList.getCurrentGameMode());  // Check if the current game mode is "Prison"
+        return "Prison".equals(customPlayerList.getCurrentGameMode());
     }
 
     public void fetchAndUpdateBalance() {
@@ -386,42 +415,47 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
             }
         }
 
-        // Purchased levels of an enchant detection
         Matcher purchaseMatcher = PURCHASED_LEVELS_PATTERN.matcher(msg);
-        if (purchaseMatcher.find()) {
-            String amount = purchaseMatcher.group(1);
-            String enchantName = purchaseMatcher.group(2).trim();
-
-            if (availableEnchants.containsKey(enchantName)) {
-                fetchAndUpdateBalance();
-                PickaxeDataFetcher.readPickaxeComponentData();
-                enchantHUD.updateEnchantNames();
-            }
-        }
-
-        // Purchased levels of an enchant detection
         Matcher prestigeMatcher = PRESTIGED_ENCHANT_PATTERN.matcher(msg);
-        if (prestigeMatcher.find()) {
-            String enchantName = prestigeMatcher.group(1).trim();
-            String amount = prestigeMatcher.group(2).trim();
+        Matcher levelUpMatcher = LEVELED_UP_PATTERN.matcher(msg);
 
-            if (availableEnchants.containsKey(enchantName)) {
-                fetchAndUpdateBalance();
-                PickaxeDataFetcher.readPickaxeComponentData();
-                enchantHUD.updateEnchantNames();
-            }
+        String enchantName = null;
+
+        if (purchaseMatcher.find()) {
+            enchantName = purchaseMatcher.group(2).trim();
+        } else if (prestigeMatcher.find()) {
+            enchantName = prestigeMatcher.group(1).trim();
+        } else if (levelUpMatcher.find()) {
+            enchantName = levelUpMatcher.group(1).trim();
         }
 
-        // Leveled up enchant detection
-        Matcher levelUpMatcher = LEVELED_UP_PATTERN.matcher(msg);
-        if (levelUpMatcher.find()) {
-            String enchantName = levelUpMatcher.group(1).trim();
-            String amount = levelUpMatcher.group(2).trim();
+        if (enchantName != null && availableEnchants.containsKey(enchantName)) {
             fetchAndUpdateBalance();
-            PickaxeDataFetcher.readPickaxeComponentData();
-            enchantHUD.updateEnchantNames();
+
+            // Delay before fetching pickaxe data to allow the server to process the upgrade
+            MinecraftClient.getInstance().execute(() -> {
+                scheduler.schedule(() -> {
+                    // Clear and repopulate the cache with new enchantment data and costs
+                    try {
+                        enchantHUD.clearAndRepopulateCache(
+                                PickaxeDataFetcher.enchantPrestigeLevels,
+                                GoogleSheetRangeFetcher.getInstance().getEnchantCostsCache()
+                        );
+                    } catch (IOException | GeneralSecurityException e) {
+                        throw new RuntimeException(e);
+                    }
+
+                    // Fetch new pickaxe component data and refresh the enchantHUD
+                    PickaxeDataFetcher.readPickaxeComponentData();
+                    GoogleSheetsAPIIntegration();
+
+                    // Ensure the HUD's selected enchant is still valid
+                    enchantHUD.updateEnchantNames();
+                }, 5, TimeUnit.SECONDS); // Adjust the delay time if necessary
+            });
         }
     }
+
 
     private void registerMouseEvents() {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
@@ -429,39 +463,37 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
                 double mouseX = client.mouse.getX() / client.getWindow().getScaleFactor();
                 double mouseY = client.mouse.getY() / client.getWindow().getScaleFactor();
 
-                // Handle mouse press and release for BoosterStatusWindow and EnchantHUD
                 if (GLFW.glfwGetMouseButton(client.getWindow().getHandle(), GLFW.GLFW_MOUSE_BUTTON_1) == GLFW.GLFW_PRESS) {
                     boosterStatusWindow.handleMousePress(mouseX, mouseY);
-                    enchantHUD.handleMousePress(mouseX, mouseY); // Handle press for EnchantHUD
+                    enchantHUD.handleMousePress(mouseX, mouseY);
                 } else if (GLFW.glfwGetMouseButton(client.getWindow().getHandle(), GLFW.GLFW_MOUSE_BUTTON_1) == GLFW.GLFW_RELEASE) {
-                    boosterStatusWindow.handleMouseRelease(); // No parameters needed
-                    enchantHUD.handleMouseRelease(); // Handle release for EnchantHUD
+                    boosterStatusWindow.handleMouseRelease();
+                    enchantHUD.handleMouseRelease();
                 }
 
-                boosterStatusWindow.onMouseMove(mouseX, mouseY);  // Always track mouse move for BoosterStatusWindow
-                enchantHUD.onMouseMove(mouseX, mouseY);  // Always track mouse move for EnchantHUD
+                boosterStatusWindow.onMouseMove(mouseX, mouseY);
+                enchantHUD.onMouseMove(mouseX, mouseY);
             }
         });
     }
 
     private void registerKeyBindings() {
         boosterKeyBinding = new KeyBinding("key.boosternoti.booster", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_B, "category.boosternoti.general");
-        toggleHudKeyBinding = new KeyBinding("key.boosternoti.toggleHud", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_H, "category.boosternoti.general");
+        toggleBoosterHudKeyBinding = new KeyBinding("key.boosternoti.toggleBoosterHud", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_H, "category.boosternoti.general");
+        toggleEnchantHudKeyBinding = new KeyBinding("key.boosternoti.toggleEnchantHUD", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_J, "category.boosternoti.general");
         showPlayerListKeyBinding = new KeyBinding("key.boosternoti.showPlayerList", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_O, "category.boosternoti.general");
         toggleInstructionsKeyBinding = new KeyBinding("key.boosternoti.toggleInstructions", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_N, "category.boosternoti.general");
-        testPickaxeDataKeyBinding = new KeyBinding("key.iblockybooster.testPickaxeData", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_G, "category.boosternoti.general");
         enchantLeftKeyBinding = new KeyBinding("key.enchant_hud.left", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_LEFT, "category.enchant_hud");
         enchantRightKeyBinding = new KeyBinding("key.enchant_hud.right", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_RIGHT, "category.enchant_hud");
 
         KeyBindingHelper.registerKeyBinding(boosterKeyBinding);
-        KeyBindingHelper.registerKeyBinding(toggleHudKeyBinding);
+        KeyBindingHelper.registerKeyBinding(toggleBoosterHudKeyBinding);
+        KeyBindingHelper.registerKeyBinding(toggleEnchantHudKeyBinding);
         KeyBindingHelper.registerKeyBinding(showPlayerListKeyBinding);
         KeyBindingHelper.registerKeyBinding(toggleInstructionsKeyBinding);
-        KeyBindingHelper.registerKeyBinding(testPickaxeDataKeyBinding);
         KeyBindingHelper.registerKeyBinding(enchantLeftKeyBinding);
         KeyBindingHelper.registerKeyBinding(enchantRightKeyBinding);
 
-        // Handle key events during the client tick
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (boosterKeyBinding.wasPressed() && isCorrectServer() && isCorrectGameMode()) {
                 sendBoosterCommand();
@@ -469,9 +501,13 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
                 fetchAndUpdateBalance();
             }
 
-            if (toggleHudKeyBinding.wasPressed() && isCorrectServer() && isCorrectGameMode()) {
-                toggleHudVisibility(!isHudVisible);
+            if (toggleBoosterHudKeyBinding.wasPressed() && isCorrectServer() && isCorrectGameMode()) {
+                toggleBoosterVisibility();
                 fetchAndUpdateBalance();
+            }
+
+            if (toggleEnchantHudKeyBinding.wasPressed() && isCorrectServer() && isCorrectGameMode()) {
+                toggleEnchantVisibility();
             }
 
             if (showPlayerListKeyBinding.isPressed() && isCorrectServer()) {
@@ -487,37 +523,28 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
             }
 
             if (enchantLeftKeyBinding.wasPressed() && isCorrectServer() && isCorrectGameMode()) {
-                enchantHUD.cycleLeft();  // Cycle left through enchants
+                enchantHUD.cycleLeft();
             }
 
             if (enchantRightKeyBinding.wasPressed() && isCorrectServer() && isCorrectGameMode()) {
-                enchantHUD.cycleRight();  // Cycle right through enchants
+                enchantHUD.cycleRight();
             }
 
             if (toggleInstructionsKeyBinding.wasPressed() && isCorrectServer() && isCorrectGameMode()) {
                 boosterStatusWindow.toggleInstructions();
-            }
-
-            if (testPickaxeDataKeyBinding.wasPressed() && isCorrectServer() && isCorrectGameMode()) {
-                System.out.println("Pickaxe Data Fetcher key pressed.");
-                runPickaxeDataFetcher();
             }
         });
     }
 
     private void startRefreshingPlayerList() {
         if (refreshTask == null || refreshTask.isCancelled()) {
-            // Refresh the player list every second while the key is held
             refreshTask = refreshScheduler.scheduleAtFixedRate(() -> {
                 if (showPlayerList) {
-                    customPlayerList.refreshPlayerList();  // Refresh the player list
+                    customPlayerList.refreshPlayerList();
 
-                    // Check and rectify the game mode if necessary
                     if (!customPlayerList.isGameModeDetected() || customPlayerList.isGameModeChanged()) {
-                        customPlayerList.detectGameMode();  // Re-run game mode detection if changed
+                        customPlayerList.detectGameMode();
                     }
-
-                    System.out.println("Player list is being refreshed with game mode: " + customPlayerList.getCurrentGameMode());
                 }
             }, 0, 1, TimeUnit.SECONDS);
         }
@@ -525,21 +552,34 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
 
     private void stopRefreshingPlayerList() {
         if (refreshTask != null && !refreshTask.isCancelled()) {
-            refreshTask.cancel(false);  // Stop refreshing the player list when the key is released
+            refreshTask.cancel(false);
         }
     }
 
-    public static void toggleHudVisibility(boolean visible) {
-        isHudVisible = visible;
-        setHudVisible(isHudVisible);
+    // Method to toggle BoosterWindow visibility
+    public static void toggleBoosterVisibility() {
+        if (boosterStatusWindow != null) {
+            boosterStatusWindow.setHudVisible(!boosterStatusWindow.isHudVisible());
+        }
+    }
+
+    // Method to toggle EnchantHUD visibility
+    public static void toggleEnchantVisibility() {
+        if (enchantHUD != null) {
+            enchantHUD.setHudVisible(!enchantHUD.isHudVisible());
+        }
     }
 
     public static void setHudVisible(boolean visible) {
         isHudVisible = visible;
-    }
 
-    public static boolean isHudVisible() {
-        return !isHudVisible;
+        // Null checks before attempting to set visibility
+        if (boosterStatusWindow != null) {
+            boosterStatusWindow.setHudVisible(visible);
+        }
+        if (enchantHUD != null) {
+            enchantHUD.setHudVisible(visible);
+        }
     }
 
     private void sendBoosterCommand() {

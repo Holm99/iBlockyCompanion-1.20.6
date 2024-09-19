@@ -1,7 +1,8 @@
 {
   "key.boosternoti.toggleInstructions": "Toggle Instructions",
   "key.boosternoti.booster": "Run Booster Command",
-  "key.boosternoti.toggleHud": "Toggle HUD",
+  "key.boosternoti.toggleBoosterHud": "Toggle Booster HUD",
+  "key.boosternoti.toggleEnchantHud": "Toggle Enchant HUD",
   "key.boosternoti.showPlayerList": "Custom Player List",
   "category.boosternoti.general": "Booster Notification Keys"
 }

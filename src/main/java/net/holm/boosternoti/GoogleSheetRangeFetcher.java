@@ -5,61 +5,109 @@ import com.google.api.services.sheets.v4.model.ValueRange;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.text.DecimalFormat;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class GoogleSheetRangeFetcher {
 
     private static final String SPREADSHEET_ID = "1ehG4xdkdWWeRKFNXNdhZsYAWrHi13wkgdOaPhw0idn8"; // Replace with your Spreadsheet ID
     private static Sheets sheetsService;
+    private static GoogleSheetRangeFetcher instance; // Singleton instance
+    private final Map<String, List<Double>> enchantCostsCache = new HashMap<>(); // Cache for enchant costs
+    private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("#,###.###"); // Formatter for large numbers with decimals
 
-    // Constructor initializes the Sheets service using GoogleSheetsHelper
-    public GoogleSheetRangeFetcher() throws IOException, GeneralSecurityException {
+    // Private constructor for Singleton
+    GoogleSheetRangeFetcher() throws IOException, GeneralSecurityException {
         sheetsService = GoogleSheetsHelper.getSheetsService();
+    }
+
+    // Static method to get the Singleton instance
+    public static GoogleSheetRangeFetcher getInstance() throws IOException, GeneralSecurityException {
+        if (instance == null) {
+            instance = new GoogleSheetRangeFetcher();
+            instance.loadEnchantCosts(); // Load enchant costs when the instance is created
+        }
+        return instance;
     }
 
     // Fetch data for a specific range
     public List<List<Object>> getDataFromRange(String range) throws IOException {
-        // Get values from the provided range (e.g., "Sheet1!A1:D10")
         ValueRange response = sheetsService.spreadsheets().values()
                 .get(SPREADSHEET_ID, range)
                 .execute();
 
-        // Return the fetched values
         return response.getValues();
     }
 
-    // Fetch pickaxe data based on enchantment and prestige level
-    public void fetchPickaxeData(String enchantment, int prestigeLevel) {
+    // Test Google Sheets API by fetching some data and caching the results
+    public void GoogleSheetsAPI() {
         try {
-            // Generate the appropriate range for the enchantment and prestige level
-            String range = getRangeForEnchantment(enchantment, prestigeLevel);
-            List<List<Object>> values = getDataFromRange(range);
+            // Fetch data for the given range
+            List<List<Object>> data = getDataFromRange("RawPrestigeData!A2:E21");
 
-            if (values != null && !values.isEmpty()) {
-                // Process the data; for now, just print it to the console
-                for (List<Object> row : values) {
-                    System.out.println(row);
-                }
-            } else {
-                System.out.println("No data found.");
+            // Print and cache the fetched data
+            if (data != null && !data.isEmpty()) {
+                cacheEnchantData(data); // Cache the enchant data
+
+                // Print the cached data for verification
+                enchantCostsCache.forEach((enchant, costs) -> {
+                });
             }
-
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    // Define the range based on enchantment and prestige level
-    private String getRangeForEnchantment(String enchantment, int prestigeLevel) {
-        // Define specific ranges for each enchantment
-        switch (enchantment.toLowerCase()) {
-            case "jackhammer":
-                return "Jackhammer!A" + prestigeLevel + ":D" + prestigeLevel; // Range for Jackhammer enchantment
-            case "explosive":
-                return "Explosive!A" + prestigeLevel + ":D" + prestigeLevel; // Range for Explosive enchantment
-            // Add more cases for other enchantments as needed
-            default:
-                return "DefaultSheet!A1:D1"; // Default range if no enchantment matches
+    // Load enchant costs from Google Sheets into the cache
+    void loadEnchantCosts() throws IOException {
+        List<List<Object>> data = getDataFromRange("RawPrestigeData!A2:E21");
+
+        if (data != null && !data.isEmpty()) {
+            cacheEnchantData(data);
         }
+    }
+
+    // Caching the enchant data with Double values
+    private void cacheEnchantData(List<List<Object>> data) {
+        for (List<Object> row : data) {
+            String enchantName = row.get(0).toString(); // First column is enchant name
+
+            try {
+                // Parse the remaining values as Doubles and cache them
+                double toMaxFirst = parseDoubleSafely(row.get(1).toString());
+                double toPrestigeFirst = parseDoubleSafely(row.get(2).toString());
+                double incrementMax = parseDoubleSafely(row.get(3).toString());
+                double incrementPrestige = parseDoubleSafely(row.get(4).toString());
+
+                enchantCostsCache.put(enchantName, List.of(toMaxFirst, toPrestigeFirst, incrementMax, incrementPrestige));
+            } catch (Exception e) {
+                System.err.println("Error parsing enchant data for " + enchantName + ": " + e.getMessage());
+            }
+        }
+    }
+
+    // Helper method to safely parse strings into Doubles
+    private double parseDoubleSafely(String value) {
+        try {
+            return value.equals("-") ? 0.0 : Double.parseDouble(value);
+        } catch (NumberFormatException e) {
+            return 0.0; // Default to 0 if parsing fails
+        }
+    }
+
+    // Access the cached enchant costs
+    public Map<String, List<Double>> getEnchantCostsCache() {
+        return enchantCostsCache;
+    }
+
+    // Helper method to format the costs for display (avoiding scientific notation)
+    private String formatCosts(List<Double> costs) {
+        StringBuilder formattedCosts = new StringBuilder();
+        for (Double cost : costs) {
+            formattedCosts.append(DECIMAL_FORMAT.format(cost)).append(", ");
+        }
+        return formattedCosts.toString().replaceAll(", $", ""); // Remove trailing comma and space
     }
 }

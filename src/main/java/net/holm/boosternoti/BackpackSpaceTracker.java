@@ -25,13 +25,10 @@ public class BackpackSpaceTracker {
                     if (!isFillingBackpack) {
                         backpackStartTime = System.currentTimeMillis();
                         isFillingBackpack = true;
-                        // System.out.println("Started filling backpack at level: " + currentLevel);
                     }
                 } else if (currentLevel > lastKnownLevel && isFillingBackpack) {
                     // Levels increased - backpack was sold
-                    long elapsedTime = System.currentTimeMillis() - backpackStartTime;
-                    lastElapsedTime = elapsedTime;  // Save the last recorded time after selling
-                    // System.out.println("Backpack sold! Time spent filling: " + elapsedTime / 1000 + " seconds");
+                    lastElapsedTime = System.currentTimeMillis() - backpackStartTime;  // Save the last recorded time after selling
                     isFillingBackpack = false;
                 }
 

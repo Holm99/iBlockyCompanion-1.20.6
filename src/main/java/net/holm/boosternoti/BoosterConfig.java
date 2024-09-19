@@ -18,7 +18,6 @@ import java.util.Map;
 import java.util.UUID;
 
 public class BoosterConfig {
-
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Path CONFIG_PATH = Paths.get("config/iblocky_boosternoti.json");
     private static final Logger LOGGER = LoggerFactory.getLogger(BoosterConfig.class);
@@ -29,13 +28,12 @@ public class BoosterConfig {
     public int enchantHUDWindowY = 0; // Default Y position for EnchantHUD
     public int initialFetchDelaySeconds = 30; // Default fetch delay
     public int fetchIntervalSeconds = 120; // Default fetch interval
+    public boolean showInstructions = true; // Default show instructions state
 
-    private final Map<UUID, String> manualRanks = new HashMap<>(); // Store manually set ranks for players
+    private final Map<UUID, String> manualRanks = new HashMap<>();
 
-    // Singleton instance
     private static BoosterConfig instance;
 
-    // Load configuration from file
     public static BoosterConfig load() {
         if (instance != null) {
             return instance;
@@ -51,13 +49,11 @@ public class BoosterConfig {
             }
         }
 
-        // If config file doesn't exist or loading fails, return default config
         instance = new BoosterConfig();
         saveDefaultConfig(instance);  // Save the default configuration if it doesn't exist
         return instance;
     }
 
-    // Save configuration to file
     public void save() {
         try (FileWriter writer = new FileWriter(CONFIG_PATH.toFile())) {
             JsonObject config = new JsonObject();
@@ -67,8 +63,8 @@ public class BoosterConfig {
             config.addProperty("enchantHUDWindowY", enchantHUDWindowY);
             config.addProperty("initialFetchDelaySeconds", initialFetchDelaySeconds);
             config.addProperty("fetchIntervalSeconds", fetchIntervalSeconds);
+            config.addProperty("showInstructions", showInstructions); // Save instructions visibility state
 
-            // Add manual ranks to the config
             JsonObject manualRanksJson = new JsonObject();
             for (Map.Entry<UUID, String> entry : manualRanks.entrySet()) {
                 manualRanksJson.addProperty(entry.getKey().toString(), entry.getValue());
@@ -95,7 +91,6 @@ public class BoosterConfig {
         return manualRanks.get(playerUUID);
     }
 
-    // Save default configuration file
     private static void saveDefaultConfig(BoosterConfig defaultConfig) {
         defaultConfig.save();
     }

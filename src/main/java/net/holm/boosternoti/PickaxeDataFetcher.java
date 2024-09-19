@@ -37,48 +37,55 @@ public class PickaxeDataFetcher {
 
         // Check if the client or the player is null to avoid NullPointerException
         if (client == null || client.player == null) {
-            System.out.println("Client or player is not available.");
             return;
         }
 
         // Get the item in slot 1 (index 0) of the hot bar
         ItemStack itemInSlot1 = client.player.getInventory().getStack(0);
 
+        // Clear the current prestige levels to avoid keeping stale data
+        enchantPrestigeLevels.clear();  // Clear the map before reading new data
+
         // Check if the item is a pickaxe
         if (itemInSlot1.getItem() instanceof PickaxeItem) {
-            System.out.println("Pickaxe found in slot 1, fetching component data...");
 
             // Extract tooltip information with null context and player, and advanced type
             List<Text> tooltip = itemInSlot1.getTooltip(null, null, TooltipType.ADVANCED);
             for (Text text : tooltip) {
                 String componentText = text.getString();
-                System.out.println("Component: " + componentText);
 
                 // Check if the component contains prestige level and process accordingly
-                processComponentText(componentText);
+                processComponentText(componentText);  // Process each component text
             }
-
-            // Output the extracted prestige levels
-            for (Map.Entry<String, Integer> entry : enchantPrestigeLevels.entrySet()) {
-                System.out.println(entry.getKey() + " Prestige Level: " + entry.getValue());
-            }
-
-        } else {
-            System.out.println("No pickaxe found in slot 1.");
         }
     }
 
     // Function to process each component text and extract prestige levels
     private static void processComponentText(String componentText) {
-        // Iterate over the available enchants from iBlockyBoosterNotificationClient class
-        for (String enchant : iBlockyBoosterNotificationClient.availableEnchants.keySet()) {
-            if (componentText.contains(enchant) && !nonPrestigeableEnchants.contains(enchant)) {
-                // Extract the prestige level if it exists
-                int prestigeLevel = extractPrestigeLevel(componentText);
-                enchantPrestigeLevels.put(enchant, prestigeLevel);
+        // Example regex to match prestige levels in the component text
+        Pattern prestigePattern = Pattern.compile("▐\\s([A-Za-z ]+)\\s(\\d+)(?:\\s\\(Prestige\\s(\\d+)\\))?");
+        Matcher matcher = prestigePattern.matcher(componentText);
+
+        if (matcher.find()) {
+            String enchantName = matcher.group(1).trim(); // Enchant name
+            int enchantLevel = Integer.parseInt(matcher.group(2).trim()); // Enchant level
+
+            // Check if prestige level exists (some enchants may not have prestige)
+            int prestigeLevel = 0;
+            if (matcher.group(3) != null) {
+                prestigeLevel = Integer.parseInt(matcher.group(3).trim());
+            }
+
+            // If the enchant level is 0, remove it from the prestige map
+            if (enchantLevel == 0) {
+                enchantPrestigeLevels.remove(enchantName);
+            } else {
+                // Otherwise, update the prestige level in the map
+                enchantPrestigeLevels.put(enchantName, prestigeLevel);
             }
         }
     }
+
 
     public static Map<String, Integer> getEnchantPrestigeLevels() {
         return enchantPrestigeLevels;

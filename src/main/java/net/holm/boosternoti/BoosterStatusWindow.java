@@ -18,11 +18,10 @@ import java.util.Locale;
 
 public class BoosterStatusWindow implements HudRenderCallback {
     private static final int BANNER_HEIGHT = 20;
-    private boolean hudVisible = true;
+    private boolean hudVisible = true; // Control HUD visibility
     private boolean isDragging = false;
     private boolean hasDragged = false;
     private boolean needsRenderUpdate = true;
-    private boolean showInstructions = true;
 
     private int windowX, windowY;
     private int mouseXOffset = 0, mouseYOffset = 0;
@@ -31,7 +30,7 @@ public class BoosterStatusWindow implements HudRenderCallback {
     private String timeRemaining = Formatting.RED + "Tokens Booster: N/A";
     private String richBoosterTimeRemaining = Formatting.RED + "Rich Booster: N/A";
     private String backpackTimeInfo = Formatting.RED + "Backpack Time: N/A";
-    private String totalTokensInfo = Formatting.YELLOW + "Total Sales: 0 Tokens"; // New variable to store total tokens info
+    private String totalTokensInfo = Formatting.YELLOW + "Total Sales: 0 Tokens";
 
     private int tokensBoosterRemainingSeconds = 0;
     private int richBoosterRemainingSeconds = 0;
@@ -43,31 +42,35 @@ public class BoosterStatusWindow implements HudRenderCallback {
 
     private final BoosterConfig config;
     private final KeyBinding boosterKeyBinding;
-    private final KeyBinding toggleHudKeyBinding;
+    private final KeyBinding toggleBoosterHudKeyBinding;
+    private final KeyBinding toggleEnchantHudKeyBinding;
     private final KeyBinding showPlayerListKeyBinding;
     private final KeyBinding toggleInstructionsKeyBinding;
-
-    public void toggleInstructions() {
-        showInstructions = !showInstructions;
-        needsRenderUpdate = true; // Ensure it re-renders when instructions are toggled
-    }
 
     // Constructor that accepts KeyBindings from the client class
     public BoosterStatusWindow(
             BoosterConfig config,
             KeyBinding boosterKeyBinding,
-            KeyBinding toggleHudKeyBinding,
+            KeyBinding toggleBoosterHudKeyBinding,
+            KeyBinding toggleEnchantHudKeyBinding,
             KeyBinding showPlayerListKeyBinding,
             KeyBinding toggleInstructionsKeyBinding) {
         this.config = config;
         this.boosterKeyBinding = boosterKeyBinding;
-        this.toggleHudKeyBinding = toggleHudKeyBinding;
+        this.toggleBoosterHudKeyBinding = toggleBoosterHudKeyBinding;
+        this.toggleEnchantHudKeyBinding = toggleEnchantHudKeyBinding;
         this.showPlayerListKeyBinding = showPlayerListKeyBinding;
         this.toggleInstructionsKeyBinding = toggleInstructionsKeyBinding;
         windowX = config.BoosterStatusWindowX;
         windowY = config.BoosterStatusWindowY;
         startCountdown();
         startBackpackTimeTracking();
+    }
+
+    public void toggleInstructions() {
+        config.showInstructions = !config.showInstructions;
+        config.save();
+        needsRenderUpdate = true;
     }
 
     private void startBackpackTimeTracking() {
@@ -254,13 +257,8 @@ public class BoosterStatusWindow implements HudRenderCallback {
 
     @Override
     public void onHudRender(DrawContext drawContext, float tickDelta) {
-        if (!isGameActive() || iBlockyBoosterNotificationClient.isHudVisible()) {
+        if (!isGameActive() || !hudVisible) {
             return;
-        }
-
-        // Null-check the key bindings before using them
-        if (boosterKeyBinding == null || toggleHudKeyBinding == null || showPlayerListKeyBinding == null || toggleInstructionsKeyBinding == null) {
-            return; // Exit early if any key binding is not initialized
         }
 
         MinecraftClient client = MinecraftClient.getInstance();
@@ -268,44 +266,48 @@ public class BoosterStatusWindow implements HudRenderCallback {
         int lineHeight = 15;
         int bannerHeight = 15;
 
-        // Calculate the maximum width of all the elements we want to display
-        int maxTextWidth = Math.max(
-                Math.max(client.textRenderer.getWidth(sellBoostInfo), client.textRenderer.getWidth(timeRemaining)),
-                Math.max(client.textRenderer.getWidth(richBoosterTimeRemaining), client.textRenderer.getWidth(backpackTimeInfo))
-        );
+        // Inline maxTextWidth calculation for all displayed text
+        int maxTextWidth = 0;
+        for (String text : new String[]{sellBoostInfo, timeRemaining, richBoosterTimeRemaining, backpackTimeInfo, totalTokensInfo, tokenBalanceInfo}) {
+            int textWidth = client.textRenderer.getWidth(text);
+            maxTextWidth = Math.max(maxTextWidth, textWidth);
+        }
 
-        maxTextWidth = Math.max(maxTextWidth, client.textRenderer.getWidth(totalTokensInfo));
-        maxTextWidth = Math.max(maxTextWidth, client.textRenderer.getWidth(tokenBalanceInfo));
-
-        if (showInstructions) {
-            // Get dynamic key bindings and add instruction text widths
+        // If instructions are shown, add their widths to maxTextWidth
+        if (config.showInstructions) {
             String boosterKey = boosterKeyBinding.getBoundKeyLocalizedText().getString();
-            String toggleHudKey = toggleHudKeyBinding.getBoundKeyLocalizedText().getString();
+            String toggleBoosterHudKey = toggleBoosterHudKeyBinding.getBoundKeyLocalizedText().getString();
+            String toggleEnchantHudKey = toggleEnchantHudKeyBinding.getBoundKeyLocalizedText().getString();
             String showPlayerListKey = showPlayerListKeyBinding.getBoundKeyLocalizedText().getString();
             String toggleInstructionsKey = toggleInstructionsKeyBinding.getBoundKeyLocalizedText().getString();
 
-            int instructionsWidth = Math.max(
-                    Math.max(client.textRenderer.getWidth("---------------------------------"), client.textRenderer.getWidth(boosterKey + " - Run Booster Command")),
-                    Math.max(client.textRenderer.getWidth(toggleHudKey + " - To toggle HUD"), client.textRenderer.getWidth(toggleInstructionsKey + " - Toggle this text"))
-            );
-            maxTextWidth = Math.max(maxTextWidth, instructionsWidth);
+            for (String text : new String[]{
+                    "---------------------------------------",
+                    boosterKey + " - Run Booster Command",
+                    toggleBoosterHudKey + " - To toggle BoosterHUD",
+                    toggleEnchantHudKey + " - To toggle EnchantHUD",
+                    showPlayerListKey + " - Custom Player List",
+                    toggleInstructionsKey + " - Toggle this text"
+            }) {
+                int textWidth = client.textRenderer.getWidth(text);
+                maxTextWidth = Math.max(maxTextWidth, textWidth);
+            }
         }
 
         // Calculate total lines
         int lineCount = 6; // 5 lines for boosters + backpack + 1 line for total tokens + 1 line for balance
-        if (showInstructions) {
-            lineCount += 7;  // Instructions take 7 extra lines
-        }
-
-        // Calculate window dimensions
         int windowWidth = maxTextWidth + 2 * padding;
-        int windowHeight = (lineCount * lineHeight) + bannerHeight + 2 * padding;
+        int windowHeight = (6 * lineHeight) + bannerHeight + 2 * padding;
+
+        if (config.showInstructions) {
+            windowHeight += 9 * lineHeight;  // Add height for instructions
+        }
 
         // Ensure window stays within screen
         ensureWindowWithinScreen(client, windowWidth, windowHeight);
 
         // Draw the banner
-        drawContext.fill(windowX, windowY, windowX + windowWidth, windowY + bannerHeight, 0xD0000000); // No close button
+        drawContext.fill(windowX, windowY, windowX + windowWidth, windowY + bannerHeight, 0xD0000000);
 
         // Draw the HUD body with background
         int currentY = windowY + bannerHeight + padding;
@@ -331,19 +333,22 @@ public class BoosterStatusWindow implements HudRenderCallback {
         currentY += lineHeight;
 
         // Render dynamic instructions if they are visible
-        if (showInstructions) {
+        if (config.showInstructions) {
             String boosterKey = boosterKeyBinding.getBoundKeyLocalizedText().getString();
-            String toggleHudKey = toggleHudKeyBinding.getBoundKeyLocalizedText().getString();
+            String toggleBoosterHudKey = toggleBoosterHudKeyBinding.getBoundKeyLocalizedText().getString();
+            String toggleEnchantHudKey = toggleEnchantHudKeyBinding.getBoundKeyLocalizedText().getString();
             String showPlayerListKey = showPlayerListKeyBinding.getBoundKeyLocalizedText().getString();
             String toggleInstructionsKey = toggleInstructionsKeyBinding.getBoundKeyLocalizedText().getString();
-
-            drawContext.drawTextWithShadow(client.textRenderer, Text.of("---------------------------------"), windowX + padding, currentY, 0xFFFFFF);
+            drawContext.drawTextWithShadow(client.textRenderer, Text.of("---------------------------------------"), windowX + padding, currentY, 0xFFFFFF);
             currentY += lineHeight;
 
             drawContext.drawTextWithShadow(client.textRenderer, Text.of(boosterKey + " - Run Booster Command"), windowX + padding, currentY, 0xFFFFFF);
             currentY += lineHeight;
 
-            drawContext.drawTextWithShadow(client.textRenderer, Text.of(toggleHudKey + " - To toggle HUD"), windowX + padding, currentY, 0xFFFFFF);
+            drawContext.drawTextWithShadow(client.textRenderer, Text.of(toggleBoosterHudKey + " - To toggle BoosterHUD"), windowX + padding, currentY, 0xFFFFFF);
+            currentY += lineHeight;
+
+            drawContext.drawTextWithShadow(client.textRenderer, Text.of(toggleEnchantHudKey + " - To toggle EnchantHUD"), windowX + padding, currentY, 0xFFFFFF);
             currentY += lineHeight;
 
             drawContext.drawTextWithShadow(client.textRenderer, Text.of(showPlayerListKey + " - Custom Player List"), windowX + padding, currentY, 0xFFFFFF);
@@ -352,13 +357,17 @@ public class BoosterStatusWindow implements HudRenderCallback {
             drawContext.drawTextWithShadow(client.textRenderer, Text.of(toggleInstructionsKey + " - Toggle this text"), windowX + padding, currentY, 0xFFFFFF);
             currentY += lineHeight;
 
+            drawContext.drawTextWithShadow(client.textRenderer, Text.of("Arrow keys to cycle through EnchantHUD text"), windowX + padding, currentY, 0xFFFFFF);
+            currentY += lineHeight;
+
             drawContext.drawTextWithShadow(client.textRenderer, Text.of("/summaryclear - To clear Total Sales"), windowX + padding, currentY, 0xFFFFFF);
             currentY += lineHeight;
 
-            drawContext.drawTextWithShadow(client.textRenderer, Text.of("---------------------------------"), windowX + padding, currentY, 0xFFFFFF);
+            drawContext.drawTextWithShadow(client.textRenderer, Text.of("---------------------------------------"), windowX + padding, currentY, 0xFFFFFF);
         }
         needsRenderUpdate = false;
     }
+
 
     public void clearTotalSales() {
         totalSales = 0;
@@ -367,23 +376,36 @@ public class BoosterStatusWindow implements HudRenderCallback {
     }
 
     public void handleMousePress(double mouseX, double mouseY) {
-        MinecraftClient client = MinecraftClient.getInstance();
         int padding = 5;
-        int bannerHeight = 15; // Fixed banner height for dragging
+        int bannerHeight = 15;
+        MinecraftClient client = MinecraftClient.getInstance();
 
-        // Calculate the maximum width of all the elements to ensure correct hitbox calculation
-        int maxTextWidth = Math.max(
-                Math.max(client.textRenderer.getWidth(sellBoostInfo), client.textRenderer.getWidth(timeRemaining)),
-                Math.max(client.textRenderer.getWidth(richBoosterTimeRemaining), client.textRenderer.getWidth(backpackTimeInfo))
-        );
+        // Inline maxTextWidth calculation for all displayed text
+        int maxTextWidth = 0;
+        for (String text : new String[]{sellBoostInfo, timeRemaining, richBoosterTimeRemaining, backpackTimeInfo, totalTokensInfo, tokenBalanceInfo}) {
+            int textWidth = client.textRenderer.getWidth(text);
+            maxTextWidth = Math.max(maxTextWidth, textWidth);
+        }
 
-        // Add instruction width if instructions are visible
-        if (showInstructions) {
-            int instructionsWidth = Math.max(
-                    Math.max(client.textRenderer.getWidth("---------------------------------"), client.textRenderer.getWidth("B - Run Booster Command")),
-                    Math.max(client.textRenderer.getWidth("H - To toggle HUD"), client.textRenderer.getWidth("N - Toggle this text"))
-            );
-            maxTextWidth = Math.max(maxTextWidth, instructionsWidth);
+        // If instructions are shown, add their widths to maxTextWidth
+        if (config.showInstructions) {
+            String boosterKey = boosterKeyBinding.getBoundKeyLocalizedText().getString();
+            String toggleBoosterHudKey = toggleBoosterHudKeyBinding.getBoundKeyLocalizedText().getString();
+            String toggleEnchantHudKey = toggleEnchantHudKeyBinding.getBoundKeyLocalizedText().getString();
+            String showPlayerListKey = showPlayerListKeyBinding.getBoundKeyLocalizedText().getString();
+            String toggleInstructionsKey = toggleInstructionsKeyBinding.getBoundKeyLocalizedText().getString();
+
+            for (String text : new String[]{
+                    "---------------------------------------",
+                    boosterKey + " - Run Booster Command",
+                    toggleBoosterHudKey + " - To toggle BoosterHUD",
+                    toggleEnchantHudKey + " - To toggle EnchantHUD",
+                    showPlayerListKey + " - Custom Player List",
+                    toggleInstructionsKey + " - Toggle this text"
+            }) {
+                int textWidth = client.textRenderer.getWidth(text);
+                maxTextWidth = Math.max(maxTextWidth, textWidth);
+            }
         }
 
         int windowWidth = maxTextWidth + 2 * padding; // Recalculate window width dynamically
@@ -396,6 +418,7 @@ public class BoosterStatusWindow implements HudRenderCallback {
             mouseYOffset = (int) (mouseY - windowY);
         }
     }
+
 
     public void handleMouseRelease() {
         isDragging = false;
@@ -424,6 +447,16 @@ public class BoosterStatusWindow implements HudRenderCallback {
         isDragging = false;
     }
 
+    // New method to set HUD visibility
+    public void setHudVisible(boolean visible) {
+        this.hudVisible = visible;
+    }
+
+    // New method to get HUD visibility status
+    public boolean isHudVisible() {
+        return this.hudVisible;
+    }
+
     private static int parseTimeToSeconds(String time) {
         int totalSeconds = 0;
 
@@ -448,8 +481,6 @@ public class BoosterStatusWindow implements HudRenderCallback {
                 System.err.println("Failed to parse time part: " + part);
             }
         }
-
-        System.out.println("Total seconds calculated: " + totalSeconds);  // Log total seconds calculated
         return totalSeconds;
     }
 }
