@@ -8,8 +8,6 @@ import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
@@ -150,7 +148,6 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
             scheduler.schedule(() -> {
                 if (isCorrectServer()) {
                     HubCommand.register();
-                    IgnoreManager.Commands();
                     customPlayerList.refreshPlayerList();
                     customPlayerList.detectGameMode();
 
@@ -310,7 +307,6 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
             }
 
             for (PlayerListEntry entry : Objects.requireNonNull(client.getNetworkHandler()).getPlayerList()) {
-                System.out.println(entry.getProfile().getName() + " - " + entry.getProfile().getId());
                 if (entry.getProfile().getId().equals(playerProfile.getId())) {
                     if (entry.getScoreboardTeam() != null) {
                         String teamPrefix = entry.getScoreboardTeam().getPrefix().getString().trim();
@@ -346,26 +342,8 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
         return null;
     }
 
-    private void processChatMessage(String msg, boolean ignoredIsGameMessage) {
+    void processChatMessage(String msg, boolean ignoredIsGameMessage) {
         MinecraftClient client = MinecraftClient.getInstance();
-
-        // Extract sender's name from the message
-        String senderName = extractSenderFromMessage(msg);
-
-        if (senderName != null) {
-            MinecraftServer server = client.getServer();
-
-            if (server != null) {  // Ensure the server is not null
-                ServerPlayerEntity sender = server.getPlayerManager().getPlayer(senderName);
-                if (sender != null) {
-                    UUID senderUUID = sender.getUuid();
-                    // Check if the sender is ignored
-                    if (IgnoreManager.isPlayerIgnored(senderUUID)) {
-                        return;  // Skip message if the sender is ignored
-                    }
-                }
-            }
-        }
 
         // The rest of your message processing code follows...
         if (msg.contains("§6§lBackpack Space §f§l→")) {
