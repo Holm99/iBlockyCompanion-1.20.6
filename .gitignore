@@ -10,7 +10,7 @@ classes/
 *.launch
 
 # idea
-src/main/resources/iblocky-clientmod-0a0ce72a1adb.json
+/src/main/resources/iblocky-clientmod-c1a3eaac1896.json
 .idea/
 *.iml
 *.ipr

@@ -23,7 +23,6 @@ public class EnchantHUD implements HudRenderCallback {
     private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("#,###.##"); // For formatting large numbers with decimals
     private boolean isDefaultMessageVisible = true; // Flag to track if the default message is visible
 
-
     private boolean hudDirty = true; // Track if the HUD needs to be updated
     private boolean isDragging = false;
     private boolean hasDragged = false;
@@ -65,7 +64,8 @@ public class EnchantHUD implements HudRenderCallback {
         windowX = config.enchantHUDWindowX;
         windowY = config.enchantHUDWindowY;
         this.extractedPrestigeLevels = PickaxeDataFetcher.enchantPrestigeLevels;
-        this.enchantCostsCache = GoogleSheetRangeFetcher.getInstance().getEnchantCostsCache();
+        CSVFetcher.fetchCSVData();
+        this.enchantCostsCache = CSVFetcher.getEnchantCostsCache();
         updateEnchantNames();
     }
 
@@ -84,10 +84,8 @@ public class EnchantHUD implements HudRenderCallback {
     }
 
     public void updateEnchantNames() {
-        // Update enchantNames to filter out level 0 enchants, but keep prestige information
         this.enchantNames = extractedPrestigeLevels.entrySet()
                 .stream()
-                // Only include enchants with a prestige level greater than 0
                 .filter(entry -> entry.getValue() > 0)
                 // Exclude Terminator if its prestige level is exactly 5
                 .filter(entry -> !(entry.getKey().equals("Terminator") && entry.getValue() == 5))
@@ -124,13 +122,11 @@ public class EnchantHUD implements HudRenderCallback {
             cachedPrestigeLevel = extractedPrestigeLevels.getOrDefault(cachedEnchant, 0);
 
             List<Double> enchantCosts = enchantCostsCache.get(cachedEnchant);
-
             if (enchantCosts != null && enchantCosts.size() >= 4) {
                 double toMaxFirst = enchantCosts.get(0);
                 double toPrestigeFirst = enchantCosts.get(1);
                 double incrementMax = enchantCosts.get(2);
                 double incrementPrestige = enchantCosts.get(3);
-                // Use these values
             } else {
                 System.err.println("Error: Incomplete enchant cost data for " + cachedEnchant);
             }
@@ -138,7 +134,7 @@ public class EnchantHUD implements HudRenderCallback {
         } else {
             cachedEnchant = "";
             cachedPrestigeLevel = 0;
-            isDefaultMessageVisible = true;  // Show the default message when no enchants are available
+            isDefaultMessageVisible = true;
         }
         hudDirty = true;
     }

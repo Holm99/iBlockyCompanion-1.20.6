@@ -157,7 +157,7 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
                         } else {
                             boosterStatusWindow.setHudVisible(true);  // Show booster window
                             enchantHUD.setHudVisible(true);  // Show enchant HUD
-                            GoogleSheetsAPIIntegration();
+                            fetchCSVDataAndUpdateHUD();
                             PickaxeDataFetcher.readPickaxeComponentData();
                             enchantHUD.updateEnchantNames();
                         }
@@ -206,32 +206,12 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
             });
         }
 
-        GoogleSheetsAPIIntegration();
-        refreshGoogleSheetsData();
+        fetchCSVDataAndUpdateHUD();
     }
 
-    public void GoogleSheetsAPIIntegration() {
-        try {
-            GoogleSheetRangeFetcher googleSheetRangeFetcher = new GoogleSheetRangeFetcher();
-            googleSheetRangeFetcher.GoogleSheetsAPI();
-        } catch (IOException | GeneralSecurityException e) {
-            System.err.println("Failed to initialize Google Sheets API: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    private void refreshGoogleSheetsData() {
-        try {
-            // Get the Google Sheet Range Fetcher instance and reload the enchant costs
-            GoogleSheetRangeFetcher googleSheetRangeFetcher = GoogleSheetRangeFetcher.getInstance();
-            googleSheetRangeFetcher.loadEnchantCosts();  // Reload the enchant costs
-
-            // Update the enchant names in EnchantHUD after refreshing the cache
-            enchantHUD.updateEnchantNames();
-        } catch (IOException | GeneralSecurityException e) {
-            System.err.println("Failed to refresh Google Sheets data: " + e.getMessage());
-            e.printStackTrace();
-        }
+    private void fetchCSVDataAndUpdateHUD() {
+        CSVFetcher.fetchCSVData(); // Fetch the CSV data
+        enchantHUD.updateEnchantNames(); // Update the enchant names in the HUD
     }
 
     private void resetHUD() {
@@ -436,18 +416,14 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
             MinecraftClient.getInstance().execute(() -> {
                 scheduler.schedule(() -> {
                     // Clear and repopulate the cache with new enchantment data and costs
-                    try {
-                        enchantHUD.clearAndRepopulateCache(
-                                PickaxeDataFetcher.enchantPrestigeLevels,
-                                GoogleSheetRangeFetcher.getInstance().getEnchantCostsCache()
-                        );
-                    } catch (IOException | GeneralSecurityException e) {
-                        throw new RuntimeException(e);
-                    }
+                    enchantHUD.clearAndRepopulateCache(
+                            PickaxeDataFetcher.enchantPrestigeLevels,
+                            CSVFetcher.getEnchantCostsCache()
+                    );
 
                     // Fetch new pickaxe component data and refresh the enchantHUD
                     PickaxeDataFetcher.readPickaxeComponentData();
-                    GoogleSheetsAPIIntegration();
+                    fetchCSVDataAndUpdateHUD();
 
                     // Ensure the HUD's selected enchant is still valid
                     enchantHUD.updateEnchantNames();

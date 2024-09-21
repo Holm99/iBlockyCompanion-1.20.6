@@ -4,10 +4,6 @@ plugins {
 	id 'com.github.johnrengelman.shadow' version '7.1.2'
 }
 
-shadowJar {
-	configurations = [project.configurations.implementation]
-}
-
 version = mod_version
 group = project.maven_group
 
@@ -32,21 +28,11 @@ repositories {
 }
 
 dependencies {
-	// Minecraft dependencies
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
 	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
 	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-	modImplementation "net.fabricmc.fabric-api:fabric-key-binding-api-v1:${fabric_version}"
-
-	// Google Sheets API dependencies
-	//implementation 'com.google.api-client:google-api-client:2.7.0'
-	implementation 'com.google.apis:google-api-services-sheets:v4-rev20240826-2.0.0'
-	implementation 'com.google.api-client:google-api-client:1.32.1'
-	implementation 'com.google.oauth-client:google-oauth-client-jetty:1.36.0'
-
-	// Gson for JSON processing
-	implementation 'com.google.http-client:google-http-client-gson:1.40.0'
+	//modImplementation "net.fabricmc.fabric-api:fabric-key-binding-api-v1:${fabric_version}"
 }
 
 loom {
