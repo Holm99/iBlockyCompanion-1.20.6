@@ -25,6 +25,12 @@ public class BoosterStatusWindow implements HudRenderCallback {
 
     private int windowX, windowY;
     private int mouseXOffset = 0, mouseYOffset = 0;
+    private int originalWindowX, originalWindowY;  // Track the original position before instructions expand
+    private boolean shouldReturnToOriginalPosition = false;
+
+    private boolean isAnimating = false;
+    private float animationProgress = 0.0f;
+    private float animationSpeed = 0.1f;
 
     private static String sellBoostInfo = Formatting.RED + "Sell Boost: N/A";
     private String timeRemaining = Formatting.RED + "Tokens Booster: N/A";
@@ -70,8 +76,47 @@ public class BoosterStatusWindow implements HudRenderCallback {
     public void toggleInstructions() {
         config.showInstructions = !config.showInstructions;
         config.save();
-        needsRenderUpdate = true;
+
+        if (config.showInstructions) {
+            // Save the original position before instructions expand
+            originalWindowX = windowX;
+            originalWindowY = windowY;
+            shouldReturnToOriginalPosition = false;  // Reset flag
+        } else {
+            shouldReturnToOriginalPosition = true;  // Prepare to return to the original position after collapse
+        }
+
+        isAnimating = true;  // Start the animation
     }
+
+    private void updateAnimation() {
+        if (isAnimating) {
+            if (config.showInstructions && animationProgress < 1.0f) {
+                // Expanding instructions
+                animationProgress += animationSpeed;
+                if (animationProgress >= 1.0f) {
+                    animationProgress = 1.0f;
+                    isAnimating = false;  // Animation finished
+                }
+            } else if (!config.showInstructions && animationProgress > 0.0f) {
+                // Collapsing instructions
+                animationProgress -= animationSpeed;
+                if (animationProgress <= 0.0f) {
+                    animationProgress = 0.0f;
+                    isAnimating = false;  // Animation finished
+                }
+            }
+
+            // Check if we need to return to the original position after collapse
+            if (!config.showInstructions && shouldReturnToOriginalPosition && animationProgress <= 0.0f) {
+                // Smoothly move the HUD back to the original position while collapsing
+                windowX = originalWindowX;
+                windowY = originalWindowY;
+                shouldReturnToOriginalPosition = false;  // Reset flag after moving back
+            }
+        }
+    }
+
 
     private void startBackpackTimeTracking() {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
@@ -261,20 +306,22 @@ public class BoosterStatusWindow implements HudRenderCallback {
             return;
         }
 
+        updateAnimation();  // Update the animation state each tick
+
         MinecraftClient client = MinecraftClient.getInstance();
         int padding = 5;
         int lineHeight = 15;
         int bannerHeight = 15;
 
-        // Inline maxTextWidth calculation for all displayed text
+        // Calculate maxTextWidth for regular HUD elements
         int maxTextWidth = 0;
         for (String text : new String[]{sellBoostInfo, timeRemaining, richBoosterTimeRemaining, backpackTimeInfo, totalTokensInfo, tokenBalanceInfo}) {
             int textWidth = client.textRenderer.getWidth(text);
             maxTextWidth = Math.max(maxTextWidth, textWidth);
         }
 
-        // If instructions are shown, add their widths to maxTextWidth
-        if (config.showInstructions) {
+        // If instructions are shown, calculate maxTextWidth for instructions as well
+        if (animationProgress > 0) {  // Or config.showInstructions depending on your logic
             String boosterKey = boosterKeyBinding.getBoundKeyLocalizedText().getString();
             String toggleBoosterHudKey = toggleBoosterHudKeyBinding.getBoundKeyLocalizedText().getString();
             String toggleEnchantHudKey = toggleEnchantHudKeyBinding.getBoundKeyLocalizedText().getString();
@@ -287,21 +334,23 @@ public class BoosterStatusWindow implements HudRenderCallback {
                     toggleBoosterHudKey + " - To toggle BoosterHUD",
                     toggleEnchantHudKey + " - To toggle EnchantHUD",
                     showPlayerListKey + " - Custom Player List",
-                    toggleInstructionsKey + " - Toggle this text"
-            }) {
+                    toggleInstructionsKey + " - Toggle this text",
+                    "Arrow keys to cycle through EnchantHUD text",
+                    "/summaryclear - To clear Total Sales",
+                    "---------------------------------------"}) {
                 int textWidth = client.textRenderer.getWidth(text);
                 maxTextWidth = Math.max(maxTextWidth, textWidth);
             }
         }
 
-        // Calculate total lines
+        // Calculate total lines and window height
         int lineCount = 6; // 5 lines for boosters + backpack + 1 line for total tokens + 1 line for balance
         int windowWidth = maxTextWidth + 2 * padding;
-        int windowHeight = (6 * lineHeight) + bannerHeight + 2 * padding;
+        int baseWindowHeight = (6 * lineHeight) + bannerHeight + 2 * padding;
 
-        if (config.showInstructions) {
-            windowHeight += 9 * lineHeight;  // Add height for instructions
-        }
+        // Dynamically calculate instruction height based on animation progress
+        int instructionsHeight = (int) (9 * lineHeight * animationProgress);
+        int windowHeight = baseWindowHeight + instructionsHeight;
 
         // Ensure window stays within screen
         ensureWindowWithinScreen(client, windowWidth, windowHeight);
@@ -313,7 +362,10 @@ public class BoosterStatusWindow implements HudRenderCallback {
         int currentY = windowY + bannerHeight + padding;
         drawContext.fill(windowX, windowY + bannerHeight, windowX + windowWidth, windowY + windowHeight, 0x80000000);
 
-        // Render booster and sales info
+        // Calculate alpha (opacity) based on animation progress
+        int alpha = (int) (255 * animationProgress);  // Max alpha is 255, scale it with animationProgress
+
+        // Render booster and sales info with fading effect
         drawContext.drawTextWithShadow(client.textRenderer, Text.of(sellBoostInfo), windowX + padding, currentY, 0xFFFFFF);
         currentY += lineHeight;
 
@@ -332,40 +384,46 @@ public class BoosterStatusWindow implements HudRenderCallback {
         drawContext.drawTextWithShadow(client.textRenderer, Text.of(tokenBalanceInfo), windowX + padding, currentY, 0xFFFFFF);
         currentY += lineHeight;
 
-        // Render dynamic instructions if they are visible
-        if (config.showInstructions) {
+        // Render dynamic instructions if animationProgress > 0, with text fading
+        if (animationProgress > 0) {
             String boosterKey = boosterKeyBinding.getBoundKeyLocalizedText().getString();
             String toggleBoosterHudKey = toggleBoosterHudKeyBinding.getBoundKeyLocalizedText().getString();
             String toggleEnchantHudKey = toggleEnchantHudKeyBinding.getBoundKeyLocalizedText().getString();
             String showPlayerListKey = showPlayerListKeyBinding.getBoundKeyLocalizedText().getString();
             String toggleInstructionsKey = toggleInstructionsKeyBinding.getBoundKeyLocalizedText().getString();
-            drawContext.drawTextWithShadow(client.textRenderer, Text.of("---------------------------------------"), windowX + padding, currentY, 0xFFFFFF);
+            drawContext.drawTextWithShadow(client.textRenderer, Text.of("---------------------------------------"), windowX + padding, currentY, applyAlpha(alpha));
             currentY += lineHeight;
 
-            drawContext.drawTextWithShadow(client.textRenderer, Text.of(boosterKey + " - Run Booster Command"), windowX + padding, currentY, 0xFFFFFF);
+            drawContext.drawTextWithShadow(client.textRenderer, Text.of(boosterKey + " - Run Booster Command"), windowX + padding, currentY, applyAlpha(alpha));
             currentY += lineHeight;
 
-            drawContext.drawTextWithShadow(client.textRenderer, Text.of(toggleBoosterHudKey + " - To toggle BoosterHUD"), windowX + padding, currentY, 0xFFFFFF);
+            drawContext.drawTextWithShadow(client.textRenderer, Text.of(toggleBoosterHudKey + " - To toggle BoosterHUD"), windowX + padding, currentY, applyAlpha(alpha));
             currentY += lineHeight;
 
-            drawContext.drawTextWithShadow(client.textRenderer, Text.of(toggleEnchantHudKey + " - To toggle EnchantHUD"), windowX + padding, currentY, 0xFFFFFF);
+            drawContext.drawTextWithShadow(client.textRenderer, Text.of(toggleEnchantHudKey + " - To toggle EnchantHUD"), windowX + padding, currentY, applyAlpha(alpha));
             currentY += lineHeight;
 
-            drawContext.drawTextWithShadow(client.textRenderer, Text.of(showPlayerListKey + " - Custom Player List"), windowX + padding, currentY, 0xFFFFFF);
+            drawContext.drawTextWithShadow(client.textRenderer, Text.of(showPlayerListKey + " - Custom Player List"), windowX + padding, currentY, applyAlpha(alpha));
             currentY += lineHeight;
 
-            drawContext.drawTextWithShadow(client.textRenderer, Text.of(toggleInstructionsKey + " - Toggle this text"), windowX + padding, currentY, 0xFFFFFF);
+            drawContext.drawTextWithShadow(client.textRenderer, Text.of(toggleInstructionsKey + " - Toggle this text"), windowX + padding, currentY, applyAlpha(alpha));
             currentY += lineHeight;
 
-            drawContext.drawTextWithShadow(client.textRenderer, Text.of("Arrow keys to cycle through EnchantHUD text"), windowX + padding, currentY, 0xFFFFFF);
+            drawContext.drawTextWithShadow(client.textRenderer, Text.of("Arrow keys to cycle through EnchantHUD text"), windowX + padding, currentY, applyAlpha(alpha));
             currentY += lineHeight;
 
-            drawContext.drawTextWithShadow(client.textRenderer, Text.of("/summaryclear - To clear Total Sales"), windowX + padding, currentY, 0xFFFFFF);
+            drawContext.drawTextWithShadow(client.textRenderer, Text.of("/summaryclear - To clear Total Sales"), windowX + padding, currentY, applyAlpha(alpha));
             currentY += lineHeight;
 
-            drawContext.drawTextWithShadow(client.textRenderer, Text.of("---------------------------------------"), windowX + padding, currentY, 0xFFFFFF);
+            drawContext.drawTextWithShadow(client.textRenderer, Text.of("---------------------------------------"), windowX + padding, currentY, applyAlpha(alpha));
         }
+
         needsRenderUpdate = false;
+    }
+
+    // Helper method to apply alpha to color
+    private int applyAlpha(int alpha) {
+        return (alpha << 24) | (0x00FFFFFF);
     }
 
 
@@ -379,6 +437,13 @@ public class BoosterStatusWindow implements HudRenderCallback {
         int padding = 5;
         int bannerHeight = 15;
         MinecraftClient client = MinecraftClient.getInstance();
+
+        // Get the window scale factor (helps handle macOS Retina display scaling)
+        double scaleFactor = client.getWindow().getScaleFactor();
+
+        // Scale the mouse coordinates
+        mouseX /= scaleFactor;
+        mouseY /= scaleFactor;
 
         // Inline maxTextWidth calculation for all displayed text
         int maxTextWidth = 0;
@@ -419,7 +484,6 @@ public class BoosterStatusWindow implements HudRenderCallback {
         }
     }
 
-
     public void handleMouseRelease() {
         isDragging = false;
         saveWindowPosition();
@@ -427,6 +491,15 @@ public class BoosterStatusWindow implements HudRenderCallback {
 
     public void onMouseMove(double mouseX, double mouseY) {
         if (isDragging) {
+            MinecraftClient client = MinecraftClient.getInstance();
+
+            // Get the window scale factor (helps handle macOS Retina display scaling)
+            double scaleFactor = client.getWindow().getScaleFactor();
+
+            // Scale the mouse coordinates
+            mouseX /= scaleFactor;
+            mouseY /= scaleFactor;
+
             windowX = (int) (mouseX - mouseXOffset);
             windowY = (int) (mouseY - mouseYOffset);
 
@@ -434,6 +507,7 @@ public class BoosterStatusWindow implements HudRenderCallback {
             hasDragged = true;
         }
     }
+
 
     private void ensureWindowWithinScreen(MinecraftClient client, int windowWidth, int windowHeight) {
         int screenWidth = client.getWindow().getScaledWidth();

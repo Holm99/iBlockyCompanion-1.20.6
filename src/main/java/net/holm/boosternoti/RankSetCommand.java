@@ -20,10 +20,12 @@ public class RankSetCommand {
                 .executes(context -> {
                     // Check if the player is on the correct server and game mode
                     if (!iBlockyBoosterNotificationClient.isCorrectServer() || !iBlockyBoosterNotificationClient.getInstance().isCorrectGameMode()) {
+                        assert MinecraftClient.getInstance().player != null;
                         MinecraftClient.getInstance().player.sendMessage(Text.of("This command is only available on the correct server and game mode."), false);
                         return 0;  // Command fails
                     }
                     // Inform the user they need to provide an argument
+                    assert MinecraftClient.getInstance().player != null;
                     MinecraftClient.getInstance().player.sendMessage(Text.of("Usage: /rankset <rank> or /rankset clear"), false);
                     return 1;  // Success, but just showing usage information
                 })
@@ -31,6 +33,7 @@ public class RankSetCommand {
                         .executes(context -> {
                             // Check if the player is on the correct server and game mode
                             if (!iBlockyBoosterNotificationClient.isCorrectServer() || !iBlockyBoosterNotificationClient.getInstance().isCorrectGameMode()) {
+                                assert MinecraftClient.getInstance().player != null;
                                 MinecraftClient.getInstance().player.sendMessage(Text.of("This command is only available on the correct server and game mode."), false);
                                 return 0;  // Command fails
                             }
@@ -63,6 +66,7 @@ public class RankSetCommand {
                         .executes(context -> {
                             // Check if the player is on the correct server and game mode
                             if (!iBlockyBoosterNotificationClient.isCorrectServer() || !iBlockyBoosterNotificationClient.getInstance().isCorrectGameMode()) {
+                                assert MinecraftClient.getInstance().player != null;
                                 MinecraftClient.getInstance().player.sendMessage(Text.of("This command is only available on the correct server and game mode."), false);
                                 return 0;  // Command fails
                             }
