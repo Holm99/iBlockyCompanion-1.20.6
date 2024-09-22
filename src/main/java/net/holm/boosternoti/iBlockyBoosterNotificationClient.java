@@ -14,8 +14,12 @@ import net.minecraft.client.util.InputUtil;
 import net.minecraft.network.message.MessageType;
 import net.minecraft.network.message.SignedMessage;
 import net.minecraft.client.network.PlayerListEntry;
+
 import com.mojang.authlib.GameProfile;
+
 import org.lwjgl.glfw.GLFW;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -29,6 +33,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class iBlockyBoosterNotificationClient implements ClientModInitializer {
+    private static final Logger LOGGER = LoggerFactory.getLogger(iBlockyBoosterNotificationClient.class);
     private static KeyBinding boosterKeyBinding;
     private static KeyBinding toggleBoosterHudKeyBinding;
     private static KeyBinding toggleEnchantHudKeyBinding;
@@ -45,6 +50,7 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
     private static boolean showPlayerList = false;  // Flag for toggling player list visibility
     private static SaleSummaryManager saleSummaryManager;
     private boolean gameModeChecked = false;
+    public boolean isMacOS;
 
     private static final Pattern TOKEN_BOOSTER_PATTERN = Pattern.compile(
             "\\s-\\sTokens\\s\\((\\d+(\\.\\d+)?)x\\)\\s\\((\\d+d\\s)?(\\d+h\\s)?(\\d+m\\s)?(\\d+s\\s)?remaining\\)",
@@ -95,6 +101,7 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
 
         // Ensure key bindings are registered early
         registerKeyBindings();
+        checkIfMacOS();
 
         boosterStatusWindow = new BoosterStatusWindow(config, boosterKeyBinding, toggleBoosterHudKeyBinding, toggleEnchantHudKeyBinding, showPlayerListKeyBinding, toggleInstructionsKeyBinding);
         try {
@@ -137,6 +144,14 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
                 gameModeChecked = true;
             }
         });
+    }
+
+    public void checkIfMacOS() {
+        // Perform OS check once during initialization
+        String osName = System.getProperty("os.name").toLowerCase();
+        isMacOS = osName.contains("mac");
+        LOGGER.info("Operating System: {}", osName);
+        LOGGER.info("Is macOS: {}", isMacOS);
     }
 
     public void registerJoinEvent() {

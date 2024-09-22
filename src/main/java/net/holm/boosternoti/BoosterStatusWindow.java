@@ -61,6 +61,7 @@ public class BoosterStatusWindow implements HudRenderCallback {
             KeyBinding toggleEnchantHudKeyBinding,
             KeyBinding showPlayerListKeyBinding,
             KeyBinding toggleInstructionsKeyBinding) {
+
         this.config = config;
         this.boosterKeyBinding = boosterKeyBinding;
         this.toggleBoosterHudKeyBinding = toggleBoosterHudKeyBinding;
@@ -441,9 +442,11 @@ public class BoosterStatusWindow implements HudRenderCallback {
         // Get the window scale factor (helps handle macOS Retina display scaling)
         double scaleFactor = client.getWindow().getScaleFactor();
 
-        // Scale the mouse coordinates
-        mouseX /= scaleFactor;
-        mouseY /= scaleFactor;
+        // Check if we are on macOS
+        if (iBlockyBoosterNotificationClient.getInstance().isMacOS) {
+            mouseX /= scaleFactor;
+            mouseY /= scaleFactor;
+        }
 
         // Inline maxTextWidth calculation for all displayed text
         int maxTextWidth = 0;
@@ -493,12 +496,17 @@ public class BoosterStatusWindow implements HudRenderCallback {
         if (isDragging) {
             MinecraftClient client = MinecraftClient.getInstance();
 
+            // Check if the OS is macOS
+            boolean isMacOS = System.getProperty("os.name").toLowerCase().contains("mac");
+
             // Get the window scale factor (helps handle macOS Retina display scaling)
             double scaleFactor = client.getWindow().getScaleFactor();
 
-            // Scale the mouse coordinates
-            mouseX /= scaleFactor;
-            mouseY /= scaleFactor;
+            // Only apply scaling on macOS
+            if (isMacOS) {
+                mouseX /= scaleFactor;
+                mouseY /= scaleFactor;
+            }
 
             windowX = (int) (mouseX - mouseXOffset);
             windowY = (int) (mouseY - mouseYOffset);
@@ -507,7 +515,6 @@ public class BoosterStatusWindow implements HudRenderCallback {
             hasDragged = true;
         }
     }
-
 
     private void ensureWindowWithinScreen(MinecraftClient client, int windowWidth, int windowHeight) {
         int screenWidth = client.getWindow().getScaledWidth();
