@@ -1,6 +1,6 @@
 {
 	"schemaVersion": 1,
-	"id": "iblocky_boosternotifi",
+	"id": "iblockycompanion",
 	"version": "${version}",
 	"name": "iBlocky Booster Notification Mod",
 	"description": "A mod to display booster notifications on the iBlocky server.",
@@ -14,13 +14,16 @@
 	"environment": "*",
 	"entrypoints": {
 		"main": [
-			"net.holm.boosternoti.iBlockyBoosterNotification"
+			"net.holm.iblockycompanion.Main"
 		],
 		"client": [
-			"net.holm.boosternoti.iBlockyBoosterNotificationClient"
+			"net.holm.iblockycompanion.MainClient"
 		]
 	},
-	"mixins": [],
+	"mixins": [
+		"main.mixin.json"
+	],
+	"accessWidener": "main.accesswidener",
 	"depends": {
 		"fabricloader": ">=0.16.0",
 		"minecraft": "~1.20.6",

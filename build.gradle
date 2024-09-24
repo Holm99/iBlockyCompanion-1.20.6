@@ -1,7 +1,6 @@
 plugins {
 	id 'fabric-loom' version '1.7-SNAPSHOT'
 	id 'maven-publish'
-	id 'com.github.johnrengelman.shadow' version '7.1.2'
 }
 
 version = mod_version
@@ -18,13 +17,13 @@ repositories {
 		url = "https://maven.fabricmc.net/"
 	}
 
+	maven {
+		name = "SpongePowered"
+		url = "https://repo.spongepowered.org/maven"
+	}
+
 	// Maven Central repository
 	mavenCentral()
-
-	// Google's Maven repository
-	maven {
-		url 'https://maven.google.com'
-	}
 }
 
 dependencies {
@@ -32,10 +31,15 @@ dependencies {
 	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
 	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-	//modImplementation "net.fabricmc.fabric-api:fabric-key-binding-api-v1:${fabric_version}"
+	implementation 'org.apache.logging.log4j:log4j-core:2.17.0.redhat-00001'
+	implementation 'org.apache.logging.log4j:log4j-api:2.14.1'
 }
 
 loom {
+	// Access widener for modifying method/field access
+	accessWidenerPath = file("src/main/resources/main.accesswidener")
+
+	// Mixin configuration
 	mixin {
 		defaultRefmapName = "mixin.iblocky_boosternoti.refmap.json"
 	}

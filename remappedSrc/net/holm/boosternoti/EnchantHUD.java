@@ -1,4 +1,4 @@
-package net.holm.boosternoti;
+package net.holm.iblockycompanion;
 
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.MinecraftClient;

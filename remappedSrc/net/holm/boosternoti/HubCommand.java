@@ -1,4 +1,4 @@
-package net.holm.boosternoti;
+package net.holm.iblockycompanion;
 
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -60,7 +60,7 @@ public class HubCommand {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.player != null) {
             suppressMessages = true; // Start suppressing messages
-            ticksToSuppress = 40;    // Suppress messages for 2 seconds (40 ticks)
+            ticksToSuppress = 60;    // Suppress messages for 3 seconds (40 ticks)
 
             for (int i = 0; i < 20; i++) {  // Send a fake command 20 times
                 client.player.networkHandler.sendChatCommand("asdfekugi");

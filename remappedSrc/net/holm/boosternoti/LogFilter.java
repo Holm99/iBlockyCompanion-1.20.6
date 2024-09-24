@@ -1,4 +1,4 @@
-package net.holm.boosternoti;
+package net.holm.iblockycompanion;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

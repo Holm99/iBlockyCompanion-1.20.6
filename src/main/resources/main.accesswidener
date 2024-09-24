@@ -1,0 +1,7 @@
+accessWidener v1 named
+
+# Make the Screen class accessible
+accessible class net/minecraft/client/gui/screen/Screen
+
+# Make the addSelectableChild method accessible
+accessible method net/minecraft/client/gui/screen/Screen addSelectableChild (Lnet/minecraft/client/gui/Element;)Lnet/minecraft/client/gui/Element;

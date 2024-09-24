@@ -1,4 +1,4 @@
-package net.holm.boosternoti;
+package net.holm.iblockycompanion;
 
 import net.fabricmc.api.ModInitializer;
 

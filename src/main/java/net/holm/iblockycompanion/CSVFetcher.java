@@ -1,4 +1,4 @@
-package net.holm.boosternoti;
+package net.holm.iblockycompanion;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -8,7 +8,6 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.ArrayList;
 
 public class CSVFetcher {
 

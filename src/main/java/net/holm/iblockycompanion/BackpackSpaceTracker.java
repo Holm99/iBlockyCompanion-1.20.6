@@ -1,7 +1,6 @@
-package net.holm.boosternoti;
+package net.holm.iblockycompanion;
 
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.minecraft.client.MinecraftClient;
 
 public class BackpackSpaceTracker {
     private static int lastKnownLevel = -1;  // Initialize to -1 to detect the first level read

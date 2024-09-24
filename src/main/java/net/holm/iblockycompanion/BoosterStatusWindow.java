@@ -1,4 +1,4 @@
-package net.holm.boosternoti;
+package net.holm.iblockycompanion;
 
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.MinecraftClient;
@@ -438,15 +438,6 @@ public class BoosterStatusWindow implements HudRenderCallback {
         int padding = 5;
         int bannerHeight = 15;
         MinecraftClient client = MinecraftClient.getInstance();
-
-        // Get the window scale factor (helps handle macOS Retina display scaling)
-        double scaleFactor = client.getWindow().getScaleFactor();
-
-        // Check if we are on macOS
-        if (iBlockyBoosterNotificationClient.getInstance().isMacOS) {
-            mouseX /= scaleFactor;
-            mouseY /= scaleFactor;
-        }
 
         // Inline maxTextWidth calculation for all displayed text
         int maxTextWidth = 0;

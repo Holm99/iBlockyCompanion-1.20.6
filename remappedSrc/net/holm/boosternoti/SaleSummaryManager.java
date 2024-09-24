@@ -1,4 +1,4 @@
-package net.holm.boosternoti;
+package net.holm.iblockycompanion;
 
 public class SaleSummaryManager {
     private static SaleSummaryManager instance;

@@ -1,4 +1,4 @@
-package net.holm.boosternoti;
+package net.holm.iblockycompanion;
 
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
@@ -32,8 +32,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class iBlockyBoosterNotificationClient implements ClientModInitializer {
-    private static final Logger LOGGER = LoggerFactory.getLogger(iBlockyBoosterNotificationClient.class);
+public class MainClient implements ClientModInitializer {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MainClient.class);
     private static KeyBinding boosterKeyBinding;
     private static KeyBinding toggleBoosterHudKeyBinding;
     private static KeyBinding toggleEnchantHudKeyBinding;
@@ -50,7 +50,6 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
     private static boolean showPlayerList = false;  // Flag for toggling player list visibility
     private static SaleSummaryManager saleSummaryManager;
     private boolean gameModeChecked = false;
-    public boolean isMacOS;
 
     private static final Pattern TOKEN_BOOSTER_PATTERN = Pattern.compile(
             "\\s-\\sTokens\\s\\((\\d+(\\.\\d+)?)x\\)\\s\\((\\d+d\\s)?(\\d+h\\s)?(\\d+m\\s)?(\\d+s\\s)?remaining\\)",
@@ -69,7 +68,7 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
     private final ScheduledExecutorService refreshScheduler = Executors.newScheduledThreadPool(1);
     private ScheduledFuture<?> refreshTask;
 
-    private static iBlockyBoosterNotificationClient instance;
+    private static MainClient instance;
 
     static final Map<String, String> availableEnchants = new HashMap<>();
     static {
@@ -101,7 +100,6 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
 
         // Ensure key bindings are registered early
         registerKeyBindings();
-        checkIfMacOS();
 
         boosterStatusWindow = new BoosterStatusWindow(config, boosterKeyBinding, toggleBoosterHudKeyBinding, toggleEnchantHudKeyBinding, showPlayerListKeyBinding, toggleInstructionsKeyBinding);
         try {
@@ -144,14 +142,6 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
                 gameModeChecked = true;
             }
         });
-    }
-
-    public void checkIfMacOS() {
-        // Perform OS check once during initialization
-        String osName = System.getProperty("os.name").toLowerCase();
-        isMacOS = osName.contains("mac");
-        LOGGER.info("Operating System: {}", osName);
-        LOGGER.info("Is macOS: {}", isMacOS);
     }
 
     public void registerJoinEvent() {
@@ -294,7 +284,7 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
         scheduler.scheduleAtFixedRate(this::fetchAndLogPlayerPrefix, config.initialFetchDelaySeconds, config.fetchIntervalSeconds, TimeUnit.SECONDS);
     }
 
-    public static iBlockyBoosterNotificationClient getInstance() {
+    public static MainClient getInstance() {
         return instance;
     }
 
@@ -416,7 +406,7 @@ public class iBlockyBoosterNotificationClient implements ClientModInitializer {
 
             try {
                 long tokens = Long.parseLong(totalString);
-                SaleSummaryManager saleSummaryManager = iBlockyBoosterNotificationClient.getSaleSummaryManager();
+                SaleSummaryManager saleSummaryManager = MainClient.getSaleSummaryManager();
                 saleSummaryManager.addSale(tokens);
                 boosterStatusWindow.setTotalSales(saleSummaryManager.getTotalSales());
                 fetchAndUpdateBalance();

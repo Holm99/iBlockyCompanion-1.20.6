@@ -1,4 +1,4 @@
-package net.holm.boosternoti;
+package net.holm.iblockycompanion;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
