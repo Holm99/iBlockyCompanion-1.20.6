@@ -4,31 +4,53 @@ Welcome to the **iBlocky Companion Mod** repository! 🎉
 
 This mod is designed specifically for the **iBlocky Minecraft server** to enhance the player's experience by displaying active boosters and their remaining time directly on the in-game HUD.
 
-![image](https://github.com/user-attachments/assets/c170541f-478b-441c-aad2-097b6a7c6717)![image](https://github.com/user-attachments/assets/14803cc8-58a3-4f8c-ab4d-5056c0e10958)
+![image](https://github.com/user-attachments/assets/c170541f-478b-441c-aad2-097b6a7c6717)
+![image](https://github.com/user-attachments/assets/14803cc8-58a3-4f8c-ab4d-5056c0e10958)
 
-**[Vanilla Client - YouTube Tutorial](https://www.youtube.com/watch?v=hmYcvN4ViZ4)**
-
-**[Lunar Client - YouTube Tutorial](https://youtu.be/_x--w80u_P0)**
-
-## Download
-1. **Download the Mod**: Grab the latest release from the [Releases](https://github.com/Holm99/iblocky-boosternotification-1.20.6/releases) page.
+## Pre installation - Downloads
+### Windows
+1. **Download the Mod**: Grab the latest release from the [Releases](https://github.com/Holm99/iBlockyCompanion-1.20.6/releases/latest) page.
 2. **Download Fabric Loader**: Only needed for vanilla client. Download **Fabric Loader** from [Fabric's official website - Direct Download](https://maven.fabricmc.net/net/fabricmc/fabric-installer/1.0.1/fabric-installer-1.0.1.exe).
-4. **Install Fabric API**: Only needed for vanilla client. This mod requires **Fabric API version 0.100.8+1.20.6**. [CurseForge - Direct Download](https://mediafilez.forgecdn.net/files/5577/501/fabric-api-0.100.8%2B1.20.6.jar).
-5. **Install Java 21**: Ensure that you have Java 21 installed. You can download it from [Oracle's official website - Direct Download](https://download.oracle.com/java/21/archive/jdk-21.0.3_windows-x64_bin.exe).
+3. **Install Fabric API**: Only needed for vanilla client. This mod requires **Fabric API version 0.100.8+1.20.6**. [CurseForge - Direct Download](https://mediafilez.forgecdn.net/files/5577/501/fabric-api-0.100.8%2B1.20.6.jar).
+4. **Install Java 21**: Ensure that you have Java 21 installed. You can download it from [x64 Installer - Direct Download](https://download.oracle.com/java/21/latest/jdk-21_windows-x64_bin.exe).
 
+### MAC
+1. **Download the Mod**: Grab the latest release from the [LTS - Releases](https://github.com/Holm99/iBlockyCompanion-1.20.6/releases/latest) page.
+2. **Download Fabric Loader**: Only needed for vanilla client. Download **Fabric Loader** from [Fabric's official website - Direct Download](https://maven.fabricmc.net/net/fabricmc/fabric-installer/1.0.1/fabric-installer-1.0.1.jar).
+3. **Install Fabric API**: Only needed for vanilla client. This mod requires **Fabric API version 0.100.8+1.20.6**. [CurseForge - Direct Download](https://mediafilez.forgecdn.net/files/5577/501/fabric-api-0.100.8%2B1.20.6.jar).
+4. **Install Java 21**: Ensure that you have Java 21 installed. You can download it from:
+   1. For Apple Silicon (M1, M2, etc): [macOS Arm 64 DMG Installer - Direct Download](https://download.oracle.com/java/21/latest/jdk-21_macos-aarch64_bin.dmg).
+   2. For Intel-Based Macs:  [macOS x64 DMG Installer - Direct Download](https://download.oracle.com/java/21/latest/jdk-21_macos-x64_bin.dmg).
 
-## Install For Vanilla Minecraft Client
-1. Install Java 21 by double clicking on the `jdk-21.0.3_windows-x64_bin.exe`
+# Installation
+## Windows
+### Install For Vanilla Minecraft Client 
+**[Vanilla Client - YouTube Tutorial](https://www.youtube.com/watch?v=hmYcvN4ViZ4)**
+1. Install Java 21 by double-clicking on the `jdk-x.x.x_windows-x64_bin.exe` (Follow its instructions).
 2. **Install Fabric Loader**: Open the application and select **Minecraft version 1.20.6** & **Loader Version 0.16.0**, then click install!
-3. **Add the Mod to Your Mods Folder**: Place the two downloaded mods (Fabric API and this mod) into your Minecraft mods folder(Do Windows key + R and type `%appdata%\.minecraft`). (If the mods folder do not exist, create it)
+3. **Adding the installed mods**: Open Minecraft goto installations. Hover a release and click the Folder icon
+   1. Open the Mods folder (Create it if it doesn't exist)
+   2. Copy over Fabric-API and iBlockyCompanion mod for your downloads folder into here.
 4. **Launch Minecraft**: Start the game using the Fabric profile. (Recommend increasing your memory whilst you are there.)
 5. Play
 
-## Install For Lunar Client
+### Install For Lunar Client
+**[Lunar Client - YouTube Tutorial](https://youtu.be/_x--w80u_P0)**
 1. Open Lunar Client and select versions
-2. Select 1.20, then at the right hand side select addon: `Lunar + Fabric`
-3. Version settings > Mods > drag the iblocky-boosternotification-2.0.0.jar into the application
+2. Select 1.20, then on the right hand side select addon: `Lunar + Fabric`
+3. Version settings > Mods > drag the iBlockyCompanion-x.x.x.jar into the application
 4. Play
+
+## Mac
+### Install For Vanilla Minecraft Client
+[YouTube Tutorial](https://www.youtube.com/watch?v=aaGtGCnsD2g) _(Not my tutorial but tested and submitted to me by macOS users, use the links above which I listed as they are more up-to-date)_.
+1. Install Java 21 by double-clicking on the `jdk-xx_macos-xyz64_bin.dmg` (Follow its instructions).
+2. **Install Fabric Loader**: Open the application and select **Minecraft version 1.20.6** & **Loader Version 0.16.0**, then click install!
+3. **Adding the installed mods**: Open Minecraft goto installations. Hover a release and click the Folder icon
+   1. Open the Mods folder (Create it if it doesn't exist)
+   2. Copy over Fabric-API and iBlockyCompanion mod for your downloads folder into here.
+4. **Launch Minecraft**: Start the game using the Fabric profile. (Recommend increasing your memory whilst you are there.)
+5. Play
 
 ## Compatibility
 
@@ -48,7 +70,7 @@ This mod is designed specifically for the **iBlocky Minecraft server** to enhanc
 - **Toggle HUD Visibility**: Press the `H` button to toggle the HUD visibility on or off.
 - **Send Booster Command**: Press the `B` button to send the `/booster` command.
 - **Lunar Client Support**: Now compatible with Lunar Client!
-- **Configuration File**: Edit the configuration file located at `.minecraft/config/iblocky_boosternotification.json` to adjust settings like HUD position and fetch intervals.
+- **Configuration File**: Edit the configuration file located at `.minecraft/config/iBlockyCompanion.json` to adjust settings like HUD position and fetch intervals.
 
 ## Usage
 
@@ -77,8 +99,8 @@ If you're interested in contributing or learning how the mod works:
 
 1. **Clone the Repository**:
    ```bash
-   git clone https://github.com/Holm99/iblocky-boosternotification-1.20.6.git
-   cd iblocky-boosternotification-1.20.6
+   git clone https://github.com/Holm99/iBlockyCompanion-1.20.6.git
+   cd iBlockyCompanion-1.20.6
      ```
 
 2. **Set Up Your IDE**:
@@ -120,4 +142,4 @@ The above copyright notice and this permission notice shall be included in all c
 
 ---
 
-Thank you for using the iBlocky Booster Notification Mod! Enjoy your enhanced gaming experience!
+Thank you for using the iBlockyCompanion Mod! Enjoy your enhanced gaming experience!

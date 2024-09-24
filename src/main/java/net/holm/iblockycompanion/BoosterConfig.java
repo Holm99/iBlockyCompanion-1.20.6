@@ -19,7 +19,7 @@ import java.util.UUID;
 
 public class BoosterConfig {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-    private static final Path CONFIG_PATH = Paths.get("config/iblocky_boosternoti.json");
+    private static final Path CONFIG_PATH = Paths.get("config/iBlockyCompanion.json");
     private static final Logger LOGGER = LoggerFactory.getLogger(BoosterConfig.class);
 
     public int BoosterStatusWindowX = 100; // Default X position for BoosterStatusWindow
