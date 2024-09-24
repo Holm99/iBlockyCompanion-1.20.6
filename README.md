@@ -1,12 +1,16 @@
 # iBlocky Companion Mod
 
 Welcome to the **iBlocky Companion Mod** repository! 🎉
+<br>Please keep in mind that this mod is made specifically for the iBlocky Server
 
 -----------------
-
+## Page Navigation:
+[Showcase](#showcase)
+<br>[Pre installation - Downloads](#pre-installation---downloads)
+<br>[Installation](#installation)
 -----------------
 
-This mod is designed specifically for the **iBlocky Minecraft server** to enhance the player's experience by displaying active boosters and their remaining time directly on the in-game HUD.
+## Showcase
 
 #### BoosterHud
 ![image](https://github.com/user-attachments/assets/50bcef62-ffea-4daa-af5d-27595118b6e6)![image](https://github.com/user-attachments/assets/9cbf6fc9-f680-4ca5-a54e-390464d450a7)
