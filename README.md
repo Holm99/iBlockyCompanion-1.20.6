@@ -71,7 +71,7 @@ BoosterHud
 4. **Install Java 21**: Ensure that you have Java 21 installed. You can download it from [x64 Installer - Direct Download](https://download.oracle.com/java/21/latest/jdk-21_windows-x64_bin.exe).
 
 ### MAC
-1. **Download the Mod**: Grab the latest release from the [LTS - Releases](https://github.com/Holm99/iBlockyCompanion-1.20.6/releases/latest) page.
+1. **Download the Mod**: Grab the latest release from the [Releases](https://github.com/Holm99/iBlockyCompanion-1.20.6/releases/latest) page.
 2. **Download Fabric Loader**: _Not needed for Lunar client_. Download **Fabric Loader** from [Fabric's official website - Direct Download](https://maven.fabricmc.net/net/fabricmc/fabric-installer/1.0.1/fabric-installer-1.0.1.jar).
 3. **Install Fabric API**: _Not needed for Lunar client_. This mod requires **Fabric API version 0.100.8+1.20.6**. [CurseForge - Direct Download](https://mediafilez.forgecdn.net/files/5577/501/fabric-api-0.100.8%2B1.20.6.jar).
 4. **Install Java 21**: Ensure that you have Java 21 installed. You can download it from:
