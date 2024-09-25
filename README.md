@@ -29,8 +29,6 @@ Welcome to the **iBlocky Companion Mod** repository! 🎉
 #### Custom Player List
 ![image](https://github.com/user-attachments/assets/5d94567d-3526-4c53-a9eb-bb7815f7c7b0)
 
-
-
 ## Features
 
 ### **HUD Displays**: 
