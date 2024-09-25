@@ -20,8 +20,8 @@ Welcome to the **iBlocky Companion Mod** repository! 🎉
 
 ## Showcase
 ### Pictures
-BoosterHud
-<br>![image](https://github.com/user-attachments/assets/50bcef62-ffea-4daa-af5d-27595118b6e6)![image](https://github.com/user-attachments/assets/9cbf6fc9-f680-4ca5-a54e-390464d450a7)
+### BoosterHud
+![image](https://github.com/user-attachments/assets/50bcef62-ffea-4daa-af5d-27595118b6e6)![image](https://github.com/user-attachments/assets/9cbf6fc9-f680-4ca5-a54e-390464d450a7)
 
 ### EnchantHUD
 ![image](https://github.com/user-attachments/assets/8b5691ae-c59c-4e09-871b-dc9313ffd891)
