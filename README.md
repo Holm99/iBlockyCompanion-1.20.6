@@ -6,8 +6,9 @@ Welcome to the **iBlocky Companion Mod** repository! 🎉
 -----------------
 ## Page Navigation:
 * [Showcase](#showcase)
+* * [Pictures](#pictures)
 * * [Features](#features)
-* [Pre installation - Downloads](#pre-installation---downloads)
+* [Pre-installation - Downloads](#pre-installation---downloads)
 * * [Windows](#windows)
 * * [Mac](#mac)
 * [Installation](#installation)
@@ -25,10 +26,40 @@ BoosterHud
 ### EnchantHUD
 ![image](https://github.com/user-attachments/assets/8b5691ae-c59c-4e09-871b-dc9313ffd891)
 
+## Features
+
+### **HUD Displays**: 
+- **BoosterHUD**
+- - Displays various information like;
+- - - Sell Boost, _{**Rank_Boost**}_ + _{**Token_Booster**}_ + _{**Rich_Pet_Booster**}_ 
+- - - Token & Rich pet Booster duration
+- - - Backpack Timer, Time used between start of mine session to sell.
+- - - Summarizes recent sales together so you can see how much you have made from a day of mining.
+- - - _True_ Balance, not integer capped.
+**EnchantHUD**
+
+### **Custom Player List**
 
 
+Retrieves[iBlocky-Calculations](https://docs.google.com/spreadsheets/d/1ehG4xdkdWWeRKFNXNdhZsYAWrHi13wkgdOaPhw0idn8/edit?usp=sharing)
 
-## Pre installation - Downloads
+- **HUD Display**: Shows active boosters and their remaining time.
+- **Dynamic Countdown**: Real-time countdown for boosters like "Tokens" and "Rich Pet" boosters.
+- **Customizable Position**: Easily drag and drop the HUD elements to reposition them on your screen.
+- **Lightweight**: Built with performance in mind, ensuring minimal impact on game performance.
+- **Toggle HUD Visibility**: Press the `H` button to toggle the HUD visibility on or off.
+- **Send Booster Command**: Press the `B` button to send the `/booster` command.
+- **Lunar Client Support**: Now compatible with Lunar Client!
+- **Configuration File**: Edit the configuration file located at `.minecraft/config/iBlockyCompanion.json` to adjust settings like HUD position and fetch intervals.
+
+## Usage
+
+- **Displaying Boosters**: The HUD will automatically show the currently active boosters and their remaining time.
+- **Dragging the HUD**: To reposition the HUD, simply click and drag it to your desired location on the screen.
+- **Modifying Configurations**: Adjust mod settings like the HUD position and fetch interval by editing the configuration file.
+
+## Pre-installation - Downloads
+**Note**: This mod is only compatible with the specified versions of Minecraft, Fabric Loader, Fabric API, and Java. Please ensure your environment matches these versions for optimal performance.
 ### Windows
 1. **Download the Mod**: Grab the latest release from the [Releases](https://github.com/Holm99/iBlockyCompanion-1.20.6/releases/latest) page.
 2. **Download Fabric Loader**: Only needed for vanilla client. Download **Fabric Loader** from [Fabric's official website - Direct Download](https://maven.fabricmc.net/net/fabricmc/fabric-installer/1.0.1/fabric-installer-1.0.1.exe).
@@ -80,25 +111,6 @@ Instructions for both Windows and macOS.
 - **Fabric Loader Version**: **0.16.0**
 - **Fabric API Version**: **0.100.8+1.20.6**
 - **Java Version**: **21**
-
-**Note**: This mod is only compatible with the specified versions of Minecraft, Fabric Loader, Fabric API, and Java. Please ensure your environment matches these versions for optimal performance.
-
-## Features
-
-- **HUD Display**: Shows active boosters and their remaining time.
-- **Dynamic Countdown**: Real-time countdown for boosters like "Tokens" and "Rich Pet" boosters.
-- **Customizable Position**: Easily drag and drop the HUD elements to reposition them on your screen.
-- **Lightweight**: Built with performance in mind, ensuring minimal impact on game performance.
-- **Toggle HUD Visibility**: Press the `H` button to toggle the HUD visibility on or off.
-- **Send Booster Command**: Press the `B` button to send the `/booster` command.
-- **Lunar Client Support**: Now compatible with Lunar Client!
-- **Configuration File**: Edit the configuration file located at `.minecraft/config/iBlockyCompanion.json` to adjust settings like HUD position and fetch intervals.
-
-## Usage
-
-- **Displaying Boosters**: The HUD will automatically show the currently active boosters and their remaining time.
-- **Dragging the HUD**: To reposition the HUD, simply click and drag it to your desired location on the screen.
-- **Modifying Configurations**: Adjust mod settings like the HUD position and fetch interval by editing the configuration file.
 
 ## Configuration
 
