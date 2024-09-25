@@ -26,6 +26,10 @@ BoosterHud
 ### EnchantHUD
 ![image](https://github.com/user-attachments/assets/8b5691ae-c59c-4e09-871b-dc9313ffd891)
 
+### Custom Player List
+<br>![image](https://github.com/user-attachments/assets/d187046c-7e08-4be3-9f5c-dd002631a12e)![image](https://github.com/user-attachments/assets/2cdf8455-50ed-4f41-bf76-89f5a766509c)
+
+
 ## Features
 
 ### **HUD Displays**: 
