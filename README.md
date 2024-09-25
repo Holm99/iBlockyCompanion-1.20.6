@@ -5,17 +5,24 @@ Welcome to the **iBlocky Companion Mod** repository! 🎉
 
 -----------------
 ## Page Navigation:
-[Showcase](#showcase)
-<br>[Pre installation - Downloads](#pre-installation---downloads)
-<br>[Installation](#installation)
+* [Showcase](#showcase)
+* * [Features](#features)
+* [Pre installation - Downloads](#pre-installation---downloads)
+* * [Windows](#windows)
+* * [Mac](#mac)
+* [Installation](#installation)
+* * [Windows](#windows-1)
+* * [Mac](#mac-1)
+* [Compatibility](#compatibility)
+
 -----------------
 
 ## Showcase
+### Pictures
+BoosterHud
+<br>![image](https://github.com/user-attachments/assets/50bcef62-ffea-4daa-af5d-27595118b6e6)![image](https://github.com/user-attachments/assets/9cbf6fc9-f680-4ca5-a54e-390464d450a7)
 
-#### BoosterHud
-![image](https://github.com/user-attachments/assets/50bcef62-ffea-4daa-af5d-27595118b6e6)![image](https://github.com/user-attachments/assets/9cbf6fc9-f680-4ca5-a54e-390464d450a7)
-
-#### EnchantHUD
+### EnchantHUD
 ![image](https://github.com/user-attachments/assets/8b5691ae-c59c-4e09-871b-dc9313ffd891)
 
 
@@ -37,6 +44,7 @@ Welcome to the **iBlocky Companion Mod** repository! 🎉
    2. For Intel-Based Macs:  [macOS x64 DMG Installer - Direct Download](https://download.oracle.com/java/21/latest/jdk-21_macos-x64_bin.dmg).
 
 # Installation
+Instructions for both Windows and macOS.
 ## Windows
 ### Install For Vanilla Minecraft Client 
 **[Vanilla Client - YouTube Tutorial](https://www.youtube.com/watch?v=hmYcvN4ViZ4)**
