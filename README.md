@@ -29,47 +29,47 @@ BoosterHud
 ## Features
 
 ### **HUD Displays**: 
-- **BoosterHUD**
-- - Displays various information like;
-- - - Sell Boost, _{**Rank_Boost**}_ + _{**Token_Booster**}_ + _{**Rich_Pet_Booster**}_ 
-- - - Token & Rich pet Booster duration
-- - - Backpack Timer, Time used between start of mine session to sell.
-- - - Summarizes recent sales together so you can see how much you have made from a day of mining.
-- - - _True_ Balance, not integer capped.
+**BoosterHUD**
+- Draggable by grabbing hold of the banner.
+- Displays various information like;
+- - Sell Boost, _{**Rank_Boost**}_ + _{**Token_Booster**}_ + _{**Rich_Pet_Booster**}_ 
+- - Token & Rich pet Booster duration
+- - Backpack Timer, Time used between start of mine session to sell.
+- - Summarizes recent sales together so you can see how much you have made from a day of mining.
+- - _True_ Balance, not integer capped.
+
 **EnchantHUD**
+<br>_(Retrieves data from [iBlocky-Calculations](https://docs.google.com/spreadsheets/d/1ehG4xdkdWWeRKFNXNdhZsYAWrHi13wkgdOaPhw0idn8/edit?usp=sharing) Google Spreadsheet)_
+- Draggable by grabbing hold of the banner.
+- Shows all prestiges which are currently on your pickaxe with a prestige level. (Cycle with arrow keys)
+- Displays your current prestige level for that enchant.
+- Gets data via Google API and calculates the next prestige level for the selected enchant. _{To prestige}_ + _{To max it afterwards}_ 
 
 ### **Custom Player List**
+- Shows server name + game mode
+- Players sorted after rank (So it is easier to read)
+- How many players are online
 
-
-Retrieves[iBlocky-Calculations](https://docs.google.com/spreadsheets/d/1ehG4xdkdWWeRKFNXNdhZsYAWrHi13wkgdOaPhw0idn8/edit?usp=sharing)
-
-- **HUD Display**: Shows active boosters and their remaining time.
-- **Dynamic Countdown**: Real-time countdown for boosters like "Tokens" and "Rich Pet" boosters.
-- **Customizable Position**: Easily drag and drop the HUD elements to reposition them on your screen.
+### **Other**
 - **Lightweight**: Built with performance in mind, ensuring minimal impact on game performance.
 - **Toggle HUD Visibility**: Press the `H` button to toggle the HUD visibility on or off.
 - **Send Booster Command**: Press the `B` button to send the `/booster` command.
 - **Lunar Client Support**: Now compatible with Lunar Client!
 - **Configuration File**: Edit the configuration file located at `.minecraft/config/iBlockyCompanion.json` to adjust settings like HUD position and fetch intervals.
 
-## Usage
-
-- **Displaying Boosters**: The HUD will automatically show the currently active boosters and their remaining time.
-- **Dragging the HUD**: To reposition the HUD, simply click and drag it to your desired location on the screen.
-- **Modifying Configurations**: Adjust mod settings like the HUD position and fetch interval by editing the configuration file.
 
 ## Pre-installation - Downloads
 **Note**: This mod is only compatible with the specified versions of Minecraft, Fabric Loader, Fabric API, and Java. Please ensure your environment matches these versions for optimal performance.
 ### Windows
 1. **Download the Mod**: Grab the latest release from the [Releases](https://github.com/Holm99/iBlockyCompanion-1.20.6/releases/latest) page.
-2. **Download Fabric Loader**: Only needed for vanilla client. Download **Fabric Loader** from [Fabric's official website - Direct Download](https://maven.fabricmc.net/net/fabricmc/fabric-installer/1.0.1/fabric-installer-1.0.1.exe).
-3. **Install Fabric API**: Only needed for vanilla client. This mod requires **Fabric API version 0.100.8+1.20.6**. [CurseForge - Direct Download](https://mediafilez.forgecdn.net/files/5577/501/fabric-api-0.100.8%2B1.20.6.jar).
+2. **Download Fabric Loader**: _Not needed for Lunar client_. Download **Fabric Loader** from [Fabric's official website - Direct Download](https://maven.fabricmc.net/net/fabricmc/fabric-installer/1.0.1/fabric-installer-1.0.1.exe).
+3. **Install Fabric API**: _Not needed for Lunar client_. This mod requires **Fabric API version 0.100.8+1.20.6**. [CurseForge - Direct Download](https://mediafilez.forgecdn.net/files/5577/501/fabric-api-0.100.8%2B1.20.6.jar).
 4. **Install Java 21**: Ensure that you have Java 21 installed. You can download it from [x64 Installer - Direct Download](https://download.oracle.com/java/21/latest/jdk-21_windows-x64_bin.exe).
 
 ### MAC
 1. **Download the Mod**: Grab the latest release from the [LTS - Releases](https://github.com/Holm99/iBlockyCompanion-1.20.6/releases/latest) page.
-2. **Download Fabric Loader**: Only needed for vanilla client. Download **Fabric Loader** from [Fabric's official website - Direct Download](https://maven.fabricmc.net/net/fabricmc/fabric-installer/1.0.1/fabric-installer-1.0.1.jar).
-3. **Install Fabric API**: Only needed for vanilla client. This mod requires **Fabric API version 0.100.8+1.20.6**. [CurseForge - Direct Download](https://mediafilez.forgecdn.net/files/5577/501/fabric-api-0.100.8%2B1.20.6.jar).
+2. **Download Fabric Loader**: _Not needed for Lunar client_. Download **Fabric Loader** from [Fabric's official website - Direct Download](https://maven.fabricmc.net/net/fabricmc/fabric-installer/1.0.1/fabric-installer-1.0.1.jar).
+3. **Install Fabric API**: _Not needed for Lunar client_. This mod requires **Fabric API version 0.100.8+1.20.6**. [CurseForge - Direct Download](https://mediafilez.forgecdn.net/files/5577/501/fabric-api-0.100.8%2B1.20.6.jar).
 4. **Install Java 21**: Ensure that you have Java 21 installed. You can download it from:
    1. For Apple Silicon (M1, M2, etc): [macOS Arm 64 DMG Installer - Direct Download](https://download.oracle.com/java/21/latest/jdk-21_macos-aarch64_bin.dmg).
    2. For Intel-Based Macs:  [macOS x64 DMG Installer - Direct Download](https://download.oracle.com/java/21/latest/jdk-21_macos-x64_bin.dmg).
@@ -104,6 +104,13 @@ Instructions for both Windows and macOS.
    2. Copy over Fabric-API and iBlockyCompanion mod for your downloads folder into here.
 4. **Launch Minecraft**: Start the game using the Fabric profile. (Recommend increasing your memory whilst you are there.)
 5. Play
+
+### Install For Lunar Client
+**[Lunar Client - YouTube Tutorial](https://youtu.be/_x--w80u_P0)**
+1. Open Lunar Client and select versions
+2. Select 1.20, then on the right hand side select addon: `Lunar + Fabric`
+3. Version settings > Mods > drag the iBlockyCompanion-x.x.x.jar into the application
+4. Play
 
 ## Compatibility
 
