@@ -26,13 +26,12 @@ public class EnchantHUD implements HudRenderCallback {
     private boolean hudDirty = true; // Track if the HUD needs to be updated
     private boolean isDragging = false;
     private boolean hasDragged = false;
-    private boolean isHudVisible = true; // Add a flag to control visibility
+    private boolean isHudVisible = true; // Flag to control visibility
     private int windowX = 10, windowY = 10;
     private int mouseXOffset = 0, mouseYOffset = 0;
 
     private String cachedEnchant = "";
     private int cachedPrestigeLevel = 0;
-    private final BoosterConfig config;
     private final Map<String, List<Double>> enchantCostsCache;
     private int maxTextWidth;  // Store max text width here
 
@@ -58,12 +57,12 @@ public class EnchantHUD implements HudRenderCallback {
             Map.entry("Lucky", Formatting.RED)
     );
 
-
-    public EnchantHUD(BoosterConfig config) throws GeneralSecurityException, IOException {
-        this.config = config;
-        windowX = config.enchantHUDWindowX;
-        windowY = config.enchantHUDWindowY;
+    public EnchantHUD() throws GeneralSecurityException, IOException {
+        // Load initial config values from ConfigMenu
+        windowX = ConfigMenu.getEnchantHUDWindowX();
+        windowY = ConfigMenu.getEnchantHUDWindowY();
         this.extractedPrestigeLevels = PickaxeDataFetcher.enchantPrestigeLevels;
+
         CSVFetcher.fetchCSVData();
         this.enchantCostsCache = CSVFetcher.getEnchantCostsCache();
         updateEnchantNames();
@@ -78,9 +77,10 @@ public class EnchantHUD implements HudRenderCallback {
     }
 
     private void saveWindowPosition() {
-        config.enchantHUDWindowX = windowX;
-        config.enchantHUDWindowY = windowY;
-        config.save();
+        // Save the position using ConfigMenu's methods
+        ConfigMenu.setEnchantHUDWindowX(windowX);
+        ConfigMenu.setEnchantHUDWindowY(windowY);
+        ConfigMenu.saveConfig();
     }
 
     public void updateEnchantNames() {
@@ -92,27 +92,36 @@ public class EnchantHUD implements HudRenderCallback {
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toList());
 
-        // Mark the HUD as dirty to trigger an update if the list is not empty
-        hudDirty = !enchantNames.isEmpty();
+        hudDirty = !enchantNames.isEmpty(); // Mark the HUD as dirty to trigger an update
         if (hudDirty) {
             updateCachedValues();
         }
     }
 
-    // Method to cycle left through enchants and mark the HUD as dirty
     public void cycleLeft() {
         if (!enchantNames.isEmpty()) {
             selectedEnchantIndex = (selectedEnchantIndex - 1 + enchantNames.size()) % enchantNames.size();
-            hudDirty = true;  // Mark the HUD as dirty when enchant changes
+            hudDirty = true;
         }
     }
 
-    // Method to cycle right through enchants and mark the HUD as dirty
     public void cycleRight() {
         if (!enchantNames.isEmpty()) {
             selectedEnchantIndex = (selectedEnchantIndex + 1) % enchantNames.size();
-            hudDirty = true;  // Mark the HUD as dirty when enchant changes
+            hudDirty = true;
         }
+    }
+
+    public void clearAndRepopulateCache(Map<String, Integer> newPrestigeLevels, Map<String, List<Double>> newEnchantCosts) {
+        // Clear existing prestige level data
+        extractedPrestigeLevels.clear();
+
+        // Populate the cache with new prestige levels
+        extractedPrestigeLevels.putAll(newPrestigeLevels);
+
+        // Reprocess the enchant names and mark the HUD as dirty to trigger a re-render
+        updateEnchantNames();
+        hudDirty = true; // Mark the HUD as dirty to ensure it re-renders with the updated data
     }
 
     public void updateCachedValues() {
@@ -123,6 +132,7 @@ public class EnchantHUD implements HudRenderCallback {
 
             List<Double> enchantCosts = enchantCostsCache.get(cachedEnchant);
             if (enchantCosts != null && enchantCosts.size() >= 4) {
+                // Unused values; adjust based on your needs.
                 double toMaxFirst = enchantCosts.get(0);
                 double toPrestigeFirst = enchantCosts.get(1);
                 double incrementMax = enchantCosts.get(2);
@@ -130,28 +140,14 @@ public class EnchantHUD implements HudRenderCallback {
             } else {
                 System.err.println("Error: Incomplete enchant cost data for " + cachedEnchant);
             }
-            isDefaultMessageVisible = false;  // Hide default message when data is present
+
+            isDefaultMessageVisible = false;
         } else {
             cachedEnchant = "";
             cachedPrestigeLevel = 0;
             isDefaultMessageVisible = true;
         }
         hudDirty = true;
-    }
-
-
-
-    // Clear the cache and repopulate with new values
-    public void clearAndRepopulateCache(Map<String, Integer> newPrestigeLevels, Map<String, List<Double>> newEnchantCosts) {
-        // Clear existing prestige level data, but do not clear enchantCostsCache
-        extractedPrestigeLevels.clear();
-
-        // Populate the cache with new prestige levels
-        extractedPrestigeLevels.putAll(newPrestigeLevels);
-
-        // Reprocess the enchant names and mark the HUD as dirty to trigger a re-render
-        updateEnchantNames();
-        hudDirty = true; // Mark the HUD as dirty to ensure it re-renders with the updated data
     }
 
     @Override
@@ -169,7 +165,6 @@ public class EnchantHUD implements HudRenderCallback {
             hudDirty = false;
         }
 
-        // Display the default message if it's visible
         if (isDefaultMessageVisible) {
             String defaultMessage = "No enchants available. Start cycling!";
             int defaultMessageWidth = client.textRenderer.getWidth(defaultMessage);
@@ -178,19 +173,17 @@ public class EnchantHUD implements HudRenderCallback {
 
             ensureWindowWithinScreen(client, windowWidth, windowHeight);
 
-            drawContext.fill(windowX, windowY, windowX + windowWidth, windowY + windowHeight, 0x80000000); // Background
+            drawContext.fill(windowX, windowY, windowX + windowWidth, windowY + windowHeight, 0x80000000);
             drawContext.drawTextWithShadow(client.textRenderer, defaultMessage, windowX + padding, windowY + padding, 0xFFFFFF);
             return;
         }
 
-        // Regular HUD rendering if the default message is not visible
         Formatting enchantColor = enchantColors.getOrDefault(cachedEnchant, Formatting.WHITE);
 
         int nextPrestigeLevel = cachedPrestigeLevel + 1;
         double nextPrestigeCostValue = calculateNextPrestigeCost(cachedEnchant, cachedPrestigeLevel, nextPrestigeLevel);
         String formattedNextPrestigeCost = DECIMAL_FORMAT.format(nextPrestigeCostValue);
 
-        // Create the text strings with formatting
         Text prestigeLevelText = Text.literal("Current prestige: ").formatted(Formatting.AQUA)
                 .append(Text.literal(String.valueOf(cachedPrestigeLevel)).formatted(Formatting.GOLD));
         Text nextPrestigeCostText = Text.literal("Next prestige cost: ").formatted(Formatting.AQUA)
@@ -199,7 +192,6 @@ public class EnchantHUD implements HudRenderCallback {
         String bannerText = "< " + cachedEnchant + " >";
         int bannerTextWidth = client.textRenderer.getWidth(bannerText);
 
-        // Calculate max text width
         maxTextWidth = Math.max(bannerTextWidth, client.textRenderer.getWidth(prestigeLevelText));
         maxTextWidth = Math.max(maxTextWidth, client.textRenderer.getWidth(nextPrestigeCostText));
 
@@ -208,27 +200,21 @@ public class EnchantHUD implements HudRenderCallback {
 
         ensureWindowWithinScreen(client, windowWidth, windowHeight);
 
-        // Draw the banner
         drawContext.fill(windowX, windowY, windowX + windowWidth, windowY + bannerHeight, 0xD0000000);
 
-        // Center and color the banner text
         int centeredX = windowX + (windowWidth - bannerTextWidth) / 2;
         drawContext.drawTextWithShadow(client.textRenderer, Text.literal(bannerText).formatted(enchantColor), centeredX, windowY + padding, 0xFFFFFF);
 
         int currentY = windowY + bannerHeight + padding;
         drawContext.fill(windowX, windowY + bannerHeight, windowX + windowWidth, windowY + windowHeight, 0x80000000);
 
-        // Render prestige level and next prestige cost
         drawContext.drawTextWithShadow(client.textRenderer, prestigeLevelText, windowX + padding, currentY, 0xFFFFFF);
         currentY += lineHeight;
 
         drawContext.drawTextWithShadow(client.textRenderer, nextPrestigeCostText, windowX + padding, currentY, 0xFFFFFF);
     }
 
-
-    // Method to calculate the next prestige cost based on the cached values
     private double calculateNextPrestigeCost(String enchantName, int currentPrestigeLevel, int nextPrestigeLevel) {
-        // Retrieve the enchant data from the cache
         List<Double> enchantCosts = enchantCostsCache.get(enchantName);
 
         if (enchantCosts != null && enchantCosts.size() == 4) {
@@ -237,21 +223,18 @@ public class EnchantHUD implements HudRenderCallback {
             double toPrestigeFirst = enchantCosts.get(1);
             double incrementPrestige = enchantCosts.get(3);
 
-            // Apply the given formula:
             return (toMaxFirst + (incrementMax * nextPrestigeLevel)) + (toPrestigeFirst + (incrementPrestige * currentPrestigeLevel));
         }
 
-        return 0.0; // Default to 0 if the data is missing
+        return 0.0;
     }
 
     public void handleMousePress(double mouseX, double mouseY) {
         int padding = 5;
         int bannerHeight = 15;
 
-        // Use the pre-calculated maxTextWidth from onHudRender
         int windowWidth = maxTextWidth + 2 * padding;
 
-        // Drag area is the full width of the HUD (maxTextWidth + padding)
         if (mouseX >= windowX && mouseX <= windowX + windowWidth && mouseY >= windowY && mouseY <= windowY + bannerHeight) {
             isDragging = true;
             hasDragged = true;
@@ -269,8 +252,6 @@ public class EnchantHUD implements HudRenderCallback {
         if (isDragging) {
             windowX = (int) (mouseX - mouseXOffset);
             windowY = (int) (mouseY - mouseYOffset);
-
-            // Mark that the window has been moved
             hasDragged = true;
         }
     }

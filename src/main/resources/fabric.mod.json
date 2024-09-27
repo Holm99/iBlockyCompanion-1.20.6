@@ -24,6 +24,7 @@
 		"main.mixin.json"
 	],
 	"accessWidener": "main.accesswidener",
+	"refmap": "mixin.iblocky_boosternoti.refmap.json",
 	"depends": {
 		"fabricloader": ">=0.16.0",
 		"minecraft": "~1.20.6",

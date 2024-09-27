@@ -46,7 +46,6 @@ public class BoosterStatusWindow implements HudRenderCallback {
 
     private long totalSales = 0;
 
-    private final BoosterConfig config;
     private final KeyBinding boosterKeyBinding;
     private final KeyBinding toggleBoosterHudKeyBinding;
     private final KeyBinding toggleEnchantHudKeyBinding;
@@ -55,31 +54,31 @@ public class BoosterStatusWindow implements HudRenderCallback {
 
     // Constructor that accepts KeyBindings from the client class
     public BoosterStatusWindow(
-            BoosterConfig config,
             KeyBinding boosterKeyBinding,
             KeyBinding toggleBoosterHudKeyBinding,
             KeyBinding toggleEnchantHudKeyBinding,
             KeyBinding showPlayerListKeyBinding,
             KeyBinding toggleInstructionsKeyBinding) {
 
-        this.config = config;
         this.boosterKeyBinding = boosterKeyBinding;
         this.toggleBoosterHudKeyBinding = toggleBoosterHudKeyBinding;
         this.toggleEnchantHudKeyBinding = toggleEnchantHudKeyBinding;
         this.showPlayerListKeyBinding = showPlayerListKeyBinding;
         this.toggleInstructionsKeyBinding = toggleInstructionsKeyBinding;
-        windowX = config.BoosterStatusWindowX;
-        windowY = config.BoosterStatusWindowY;
+
+        // Use the static getters from ConfigMenu to get window positions
+        windowX = ConfigMenu.getBoosterStatusWindowX();
+        windowY = ConfigMenu.getBoosterStatusWindowY();
         startCountdown();
         startBackpackTimeTracking();
     }
 
     public void toggleInstructions() {
-        config.showInstructions = !config.showInstructions;
-        config.save();
+        boolean showInstructions = ConfigMenu.getShowInstructions(); // Get the current state from ConfigMenu
+        ConfigMenu.setShowInstructions(!showInstructions); // Toggle it
+        ConfigMenu.saveConfig(); // Save the changes
 
-        if (config.showInstructions) {
-            // Save the original position before instructions expand
+        if (!showInstructions) {
             originalWindowX = windowX;
             originalWindowY = windowY;
             shouldReturnToOriginalPosition = false;  // Reset flag
@@ -92,14 +91,15 @@ public class BoosterStatusWindow implements HudRenderCallback {
 
     private void updateAnimation() {
         if (isAnimating) {
-            if (config.showInstructions && animationProgress < 1.0f) {
+            boolean showInstructions = ConfigMenu.getShowInstructions();
+            if (showInstructions && animationProgress < 1.0f) {
                 // Expanding instructions
                 animationProgress += animationSpeed;
                 if (animationProgress >= 1.0f) {
                     animationProgress = 1.0f;
                     isAnimating = false;  // Animation finished
                 }
-            } else if (!config.showInstructions && animationProgress > 0.0f) {
+            } else if (!showInstructions && animationProgress > 0.0f) {
                 // Collapsing instructions
                 animationProgress -= animationSpeed;
                 if (animationProgress <= 0.0f) {
@@ -109,7 +109,7 @@ public class BoosterStatusWindow implements HudRenderCallback {
             }
 
             // Check if we need to return to the original position after collapse
-            if (!config.showInstructions && shouldReturnToOriginalPosition && animationProgress <= 0.0f) {
+            if (!showInstructions && shouldReturnToOriginalPosition && animationProgress <= 0.0f) {
                 // Smoothly move the HUD back to the original position while collapsing
                 windowX = originalWindowX;
                 windowY = originalWindowY;
@@ -117,7 +117,6 @@ public class BoosterStatusWindow implements HudRenderCallback {
             }
         }
     }
-
 
     private void startBackpackTimeTracking() {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
@@ -139,9 +138,9 @@ public class BoosterStatusWindow implements HudRenderCallback {
     }
 
     private void saveWindowPosition() {
-        config.BoosterStatusWindowX = windowX;
-        config.BoosterStatusWindowY = windowY;
-        config.save();
+        ConfigMenu.setBoosterStatusWindowX(windowX); // Save position to ConfigMenu
+        ConfigMenu.setBoosterStatusWindowY(windowY);
+        ConfigMenu.saveConfig(); // Save the updated config
     }
 
     private void startCountdown() {
@@ -427,7 +426,6 @@ public class BoosterStatusWindow implements HudRenderCallback {
         return (alpha << 24) | (0x00FFFFFF);
     }
 
-
     public void clearTotalSales() {
         totalSales = 0;
         totalTokensInfo = Formatting.YELLOW + "Total Sales: 0 Tokens";
@@ -447,7 +445,7 @@ public class BoosterStatusWindow implements HudRenderCallback {
         }
 
         // If instructions are shown, add their widths to maxTextWidth
-        if (config.showInstructions) {
+        if (ConfigMenu.getShowInstructions()) {
             String boosterKey = boosterKeyBinding.getBoundKeyLocalizedText().getString();
             String toggleBoosterHudKey = toggleBoosterHudKeyBinding.getBoundKeyLocalizedText().getString();
             String toggleEnchantHudKey = toggleEnchantHudKeyBinding.getBoundKeyLocalizedText().getString();

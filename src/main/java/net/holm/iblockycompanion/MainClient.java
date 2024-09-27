@@ -41,7 +41,6 @@ public class MainClient implements ClientModInitializer {
     private static KeyBinding toggleInstructionsKeyBinding;
     private static KeyBinding enchantLeftKeyBinding; // New key bindings for EnchantHUD
     private static KeyBinding enchantRightKeyBinding;
-    private static BoosterConfig config;
     static BoosterStatusWindow boosterStatusWindow;
     private static EnchantHUD enchantHUD;
     private static boolean isHudVisible = true;
@@ -96,14 +95,13 @@ public class MainClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         instance = this;
-        config = BoosterConfig.load();
 
         // Ensure key bindings are registered early
         registerKeyBindings();
 
-        boosterStatusWindow = new BoosterStatusWindow(config, boosterKeyBinding, toggleBoosterHudKeyBinding, toggleEnchantHudKeyBinding, showPlayerListKeyBinding, toggleInstructionsKeyBinding);
+        boosterStatusWindow = new BoosterStatusWindow(boosterKeyBinding, toggleBoosterHudKeyBinding, toggleEnchantHudKeyBinding, showPlayerListKeyBinding, toggleInstructionsKeyBinding);
         try {
-            enchantHUD = new EnchantHUD(config); // Initialize the EnchantHUD here
+            enchantHUD = new EnchantHUD(); // Initialize the EnchantHUD here
         } catch (GeneralSecurityException | IOException e) {
             throw new RuntimeException(e);
         }
@@ -146,10 +144,6 @@ public class MainClient implements ClientModInitializer {
 
     public void registerJoinEvent() {
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
-            if (config == null) {
-                config = BoosterConfig.load();
-            }
-
             scheduler.schedule(() -> {
                 if (isCorrectServer()) {
                     HubCommand.register();
@@ -281,7 +275,7 @@ public class MainClient implements ClientModInitializer {
     }
 
     void startFetchingDisplayName() {
-        scheduler.scheduleAtFixedRate(this::fetchAndLogPlayerPrefix, config.initialFetchDelaySeconds, config.fetchIntervalSeconds, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(this::fetchAndLogPlayerPrefix, ConfigMenu.getInitialFetchDelaySeconds(), ConfigMenu.getFetchIntervalSeconds(), TimeUnit.SECONDS);
     }
 
     public static MainClient getInstance() {
@@ -299,8 +293,7 @@ public class MainClient implements ClientModInitializer {
             GameProfile playerProfile = client.player.getGameProfile();
             UUID playerUUID = playerProfile.getId();
 
-            BoosterConfig config = BoosterConfig.load();
-            String manualRank = config.getManualRank(playerUUID);
+            String manualRank = ConfigMenu.getManualRank(playerUUID);
 
             if (manualRank != null) {
                 SellBoostCalculator.setRank(manualRank);

@@ -18,34 +18,25 @@ public class RankSetCommand {
         dispatcher.register(literal("rankset")
                 // Base command execution without arguments
                 .executes(context -> {
-                    // Check if the player is on the correct server and game mode
-                    if (!MainClient.isCorrectServer() || !MainClient.getInstance().isCorrectGameMode()) {
-                        assert MinecraftClient.getInstance().player != null;
-                        MinecraftClient.getInstance().player.sendMessage(Text.of("This command is only available on the correct server and game mode."), false);
-                        return 0;  // Command fails
+                    if (!isCommandAllowed()) {
+                        return 0;
                     }
-                    // Inform the user they need to provide an argument
-                    assert MinecraftClient.getInstance().player != null;
-                    MinecraftClient.getInstance().player.sendMessage(Text.of("Usage: /rankset <rank> or /rankset clear"), false);
+                    sendPlayerMessage("Usage: /rankset <rank> or /rankset clear");
                     return 1;  // Success, but just showing usage information
                 })
                 .then(literal("clear")  // Explicitly handle "clear" command
                         .executes(context -> {
-                            // Check if the player is on the correct server and game mode
-                            if (!MainClient.isCorrectServer() || !MainClient.getInstance().isCorrectGameMode()) {
-                                assert MinecraftClient.getInstance().player != null;
-                                MinecraftClient.getInstance().player.sendMessage(Text.of("This command is only available on the correct server and game mode."), false);
-                                return 0;  // Command fails
+                            if (!isCommandAllowed()) {
+                                return 0;
                             }
 
                             MinecraftClient client = MinecraftClient.getInstance();
                             if (client != null && client.player != null) {
                                 UUID playerUUID = client.player.getUuid();
-                                BoosterConfig config = BoosterConfig.load();
 
-                                // Clear manual rank
-                                config.clearManualRank(playerUUID);
-                                client.player.sendMessage(Text.of("Manual rank cleared. Fetching rank from server..."), false);
+                                // Clear manual rank using ConfigMenu
+                                ConfigMenu.clearManualRank(playerUUID);
+                                sendPlayerMessage("Manual rank cleared. Fetching rank from server...");
 
                                 // Immediately fetch and apply the rank from the server
                                 MainClient.getInstance().fetchAndLogPlayerPrefix();
@@ -54,7 +45,7 @@ public class RankSetCommand {
                             }
                             return 0;
                         }))
-                .then(argument("rank", StringArgumentType.greedyString())  // Handle "rank" argument separately
+                .then(argument("rank", StringArgumentType.greedyString())  // Handle "rank" argument
                         .suggests((context, builder) -> {
                             // Suggest ranks from the aliasMap, sorted alphabetically
                             Map<String, String> aliasMap = SellBoostCalculator.getAliasMap();
@@ -64,11 +55,8 @@ public class RankSetCommand {
                             return builder.buildFuture();
                         })
                         .executes(context -> {
-                            // Check if the player is on the correct server and game mode
-                            if (!MainClient.isCorrectServer() || !MainClient.getInstance().isCorrectGameMode()) {
-                                assert MinecraftClient.getInstance().player != null;
-                                MinecraftClient.getInstance().player.sendMessage(Text.of("This command is only available on the correct server and game mode."), false);
-                                return 0;  // Command fails
+                            if (!isCommandAllowed()) {
+                                return 0;
                             }
 
                             String rank = StringArgumentType.getString(context, "rank");
@@ -76,29 +64,44 @@ public class RankSetCommand {
                             if (client != null && client.player != null) {
                                 UUID playerUUID = client.player.getUuid();
 
-                                // Check only unformatted rank
+                                // Use the alias map to format the rank correctly
                                 Map<String, String> aliasMap = SellBoostCalculator.getAliasMap();
                                 Map<String, Double> rankBoostMap = SellBoostCalculator.getRankBoostMap();
-
-                                // Get formatted rank based on the alias
                                 String formattedRank = aliasMap.getOrDefault(rank.toLowerCase(), rank);
 
                                 // Ensure we are only checking the formatted rank from the alias map
                                 if (rankBoostMap.containsKey(formattedRank)) {
-                                    BoosterConfig config = BoosterConfig.load();
-                                    config.setManualRank(playerUUID, formattedRank);
+                                    // Set manual rank using ConfigMenu
+                                    ConfigMenu.setManualRank(playerUUID, formattedRank);
 
-                                    // Set the rank
+                                    // Apply the rank
                                     SellBoostCalculator.setRank(formattedRank);
-                                    client.player.sendMessage(Text.of("Rank set to: " + formattedRank), false);
+                                    sendPlayerMessage("Rank set to: " + formattedRank);
                                     return 1;  // Success
                                 } else {
-                                    client.player.sendMessage(Text.of("Invalid rank: " + rank), false);
+                                    sendPlayerMessage("Invalid rank: " + rank);
                                     return 0;  // Failure
                                 }
                             }
                             return 0;
                         }))
         );
+    }
+
+    // Helper method to check if the command is allowed based on the server and game mode
+    private static boolean isCommandAllowed() {
+        if (!MainClient.isCorrectServer() || !MainClient.getInstance().isCorrectGameMode()) {
+            sendPlayerMessage("This command is only available on the correct server and game mode.");
+            return false;
+        }
+        return true;
+    }
+
+    // Helper method to send a message to the player
+    private static void sendPlayerMessage(String message) {
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (client != null && client.player != null) {
+            client.player.sendMessage(Text.of(message), false);
+        }
     }
 }

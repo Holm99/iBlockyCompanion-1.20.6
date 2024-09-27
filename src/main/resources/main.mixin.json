@@ -2,10 +2,8 @@
   "required": true,
   "package": "net.holm.iblockycompanion.mixin",
   "compatibilityLevel": "JAVA_21",
-  "mixins": [
+  "client": [
     "OptionsScreenMixin"
   ],
-  "injectors": {
-    "defaultRequire": 1
-  }
+  "refmap": "mixin.iblocky_boosternoti.refmap.json"
 }
